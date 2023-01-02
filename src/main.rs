@@ -1,12 +1,65 @@
 use dioxus::prelude::*;
+use dioxus_desktop::tao::menu::{MenuBar, MenuItem, MenuItemAttributes};
 use crate::state::*;
 
 mod gui;
 mod state;
 
+const app_name: &str = "Odyssey Cookbook";
+
 fn main() {
-    dioxus::desktop::launch(app);
+    dioxus::desktop::launch_cfg(app, |c|
+        c.with_window(|w| {
+            let mut about_menu = MenuBar::new();
+            about_menu.add_native_item(MenuItem::About(app_name.into()));
+            about_menu.add_native_item(MenuItem::Separator);
+            about_menu.add_native_item(MenuItem::Hide);
+            about_menu.add_native_item(MenuItem::HideOthers);
+            about_menu.add_native_item(MenuItem::ShowAll);
+            about_menu.add_native_item(MenuItem::Separator);
+            about_menu.add_native_item(MenuItem::Quit);
+
+            let mut file_menu = MenuBar::new();
+            file_menu.add_native_item(MenuItem::CloseWindow);
+
+            let mut edit_menu = MenuBar::new();
+            edit_menu.add_native_item(MenuItem::Undo);
+            edit_menu.add_native_item(MenuItem::Redo);
+            edit_menu.add_native_item(MenuItem::Separator);
+            edit_menu.add_native_item(MenuItem::Cut);
+            edit_menu.add_native_item(MenuItem::Copy);
+            edit_menu.add_native_item(MenuItem::Paste);
+            edit_menu.add_native_item(MenuItem::Separator);
+            edit_menu.add_native_item(MenuItem::SelectAll);
+
+            let mut view_menu = MenuBar::new();
+            // TODO: Hide tab bar items.
+
+            let mut window_menu = MenuBar::new();
+            window_menu.add_native_item(MenuItem::Minimize);
+            window_menu.add_native_item(MenuItem::Zoom);
+            // window_menu.add_native_item(MenuItem::Separator);
+            // window_menu.add_native_item(MenuItem::BringAllToFront);
+            // window_menu.add_native_item(MenuItem::Window);
+            // window_menu.add_native_item(MenuItem::CloseWindow);
+
+            let mut help_menu = MenuBar::new();
+            help_menu.add_item(MenuItemAttributes::new(&format!("{} Help", app_name)));
+
+            let mut menu = MenuBar::new();
+            menu.add_submenu( app_name, true, about_menu);
+            menu.add_submenu( "File", true, file_menu);
+            menu.add_submenu( "Edit", true, edit_menu);
+            menu.add_submenu( "View", true, view_menu);
+            menu.add_submenu( "Window", true, window_menu);
+            menu.add_submenu( "Help", true, help_menu);
+
+            w.with_title(app_name)
+             .with_menu(menu)
+        })
+    );
 }
+
 
 fn app(cx: Scope) -> Element {
     let state = use_state(&cx, || {
