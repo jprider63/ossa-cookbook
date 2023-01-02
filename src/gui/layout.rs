@@ -17,11 +17,17 @@ pub fn layout<'a>(cx: Scope, state: &'a UseState<Vec<Cookbook>>) -> Element {
         View::NoSelection
     });
 
-    match *view.current() {
+    let r = match *view.current() {
         View::Login => todo!(),
-        View::NoSelection => cx.render(rsx! ( NoSelectionView { view: view, state: state } )),
-        View::Cookbook(cookbookid) => cx.render(rsx! ( CookbookView { view: view, state: state, cookbook_id: cookbookid } )),
-    }
+        View::NoSelection => rsx! ( NoSelectionView { view: view, state: state } ),
+        View::Cookbook(cookbookid) => rsx! ( CookbookView { view: view, state: state, cookbook_id: cookbookid } ),
+    };
+    cx.render(rsx!(
+        div {
+            class: "min-h-screen flex flex-col flex-auto flex-shrink-0 antialiased bg-gray-50 text-gray-800",
+            r
+        }
+    ))
 }
 
 #[inline_props]
@@ -62,28 +68,25 @@ fn Sidebar<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cook
 
     cx.render(rsx! (
         div {
-            class: "min-h-screen flex flex-col flex-auto flex-shrink-0 antialiased bg-gray-50 text-gray-800",
+            class: "fixed flex flex-col top-0 left-0 w-64 bg-white h-full border-r",
             div {
-                class: "fixed flex flex-col top-0 left-0 w-64 bg-white h-full border-r",
-                div {
-                    class: "overflow-y-auto overflow-x-hidden flex-grow",
-                    ul {
-                        class: "flex flex-col py-4 space-y-1",
-                        SidebarHeader { title: "COOKBOOKS" }
-                        cookbooks
-                        SidebarHeader { title: "MEAL PLANNER" }
-                        SidebarItem   { title: "Weekly meals", icon: Shape::PencilSquare, onclick: |_e| {println!("TODO!")} }
-                        SidebarItem   { title: "Thanksgiving", icon: Shape::PencilSquare, onclick: |_e| {println!("TODO!")} }
-                        SidebarHeader { title: "SETTINGS" }
-                        SidebarItem   { title: "Account", icon: Shape::User, onclick: |_e| {println!("TODO!")} }
-                        SidebarItem   { title: "Logout", icon: Shape::ArrowRightOnRectangle, onclick: |_e| {println!("TODO!")} }
-                    }
+                class: "overflow-y-auto overflow-x-hidden flex-grow",
+                ul {
+                    class: "flex flex-col py-4 space-y-1",
+                    SidebarHeader { title: "COOKBOOKS" }
+                    cookbooks
+                    SidebarHeader { title: "MEAL PLANNER" }
+                    SidebarItem   { title: "Weekly meals", icon: Shape::PencilSquare, onclick: |_e| {println!("TODO!")} }
+                    SidebarItem   { title: "Thanksgiving", icon: Shape::PencilSquare, onclick: |_e| {println!("TODO!")} }
+                    SidebarHeader { title: "SETTINGS" }
+                    SidebarItem   { title: "Account", icon: Shape::User, onclick: |_e| {println!("TODO!")} }
+                    SidebarItem   { title: "Logout", icon: Shape::ArrowRightOnRectangle, onclick: |_e| {println!("TODO!")} }
                 }
             }
-            // div {
-            //     class: "flex flex-col",
-            //     "TEST!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-            // }
+        }
+        div {
+            // class: "flex flex-col",
+            "TEST!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
         }
     ))
 }
