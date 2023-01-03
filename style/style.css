@@ -11,6 +11,35 @@
     -webkit-app-region: no-drag;
 }
 
+html, body {
+    @apply min-h-screen;
+}
+
+body {
+    overflow-x: hidden;
+		@apply /*bg-gray-50*/ bg-white text-gray-800 antialiased;
+}
+
+.wrapper {
+    @apply min-h-screen flex flex-auto flex-shrink-0;
+}
+
+.sidebar {
+    @apply bg-gray-50 /*bg-white*/ fixed flex flex-col top-0 left-0 w-64 h-full border-r border-t;
+}
+
+.sidebar-item {
+    @apply relative flex flex-row items-center h-11 focus:outline-none hover:bg-gray-100 text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-sky-500 pr-6;
+}
+
+.sidebar-item.selected {
+    @apply bg-gray-200 text-gray-800 border-green-500 hover:border-sky-500;
+}
+
+.content {
+    @apply ml-64 grow border-t;
+}
+
 *, a, button {
     cursor: default;
     user-select: none;

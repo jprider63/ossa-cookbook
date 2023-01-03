@@ -11,6 +11,14 @@ enum View {
     Cookbook(CookbookId),
 }
 
+fn is_cookbook_selected(view: &View, cid: CookbookId) -> bool {
+    match view {
+        View::Login => false,
+        View::NoSelection => false,
+        View::Cookbook(vid) => *vid == cid,
+    }
+}
+
 #[inline_props]
 pub fn layout<'a>(cx: Scope, state: &'a UseState<Vec<Cookbook>>) -> Element {
     let view = use_state(&cx, || {
@@ -24,7 +32,7 @@ pub fn layout<'a>(cx: Scope, state: &'a UseState<Vec<Cookbook>>) -> Element {
     };
     cx.render(rsx!(
         div {
-            class: "min-h-screen flex flex-col flex-auto flex-shrink-0 antialiased bg-gray-50 text-gray-800",
+            class: "wrapper",
             r
         }
     ))
@@ -34,18 +42,44 @@ pub fn layout<'a>(cx: Scope, state: &'a UseState<Vec<Cookbook>>) -> Element {
 fn NoSelectionView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>) -> Element {
     cx.render(rsx! (
         Sidebar { view: view, state: state }
+        div {
+            class: "content",
+            div {
+                class: "flex justify-center items-center h-screen font-bold",
+                "No selection" // No selection. | New cookbook | | New meal planner |
+            }
+        }
     ))
 }
 
 #[inline_props]
 fn CookbookView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId) -> Element {
     if let Some(cookbook) = state.current().get(*cookbook_id) {
-        println!("rendering {}..", cookbook.title);
         cx.render(rsx! (
             Sidebar { view: view, state: state }
             div {
-                class: "min-h-screen flex flex-col flex-auto flex-shrink-0 antialiased",
-                "{cookbook.title}"
+                class: "content",
+                div {
+                    class: "flex justify-center",
+                    h1 {
+                        class: "text-3xl font-bold mt-4 mb-6 text-center",
+                        "{cookbook.title}"
+                    }
+                }
+                div {
+                    class: "flex flex-row flex-wrap",
+                    RecipePill {}
+                    RecipePill {}
+                    RecipePill {}
+                    RecipePill {}
+                    RecipePill {}
+                    RecipePill {}
+                    div {
+                        class: "rounded-xl border m-3 p-5 basis-1/3",
+                        onclick: |_e| {println!("TODO!")},
+                        "New Recipe"
+                    }
+                }
             }
         ))
     } else {
@@ -61,14 +95,35 @@ fn CookbookView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec
 }
 
 #[inline_props]
+// fn RecipePill<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId) -> Element {
+fn RecipePill(cx: Scope) -> Element {
+    cx.render(rsx! (
+        div {
+            class: "basis-1/3",
+            div {
+                class: "rounded-xl border m-3 min-w-fit",
+                onclick: |_e| {println!("TODO!")},
+                img {
+                    src: "https://food.fnr.sndimg.com/content/dam/images/food/fullset/2008/8/14/0/GT0107_kalbi_s4x3.jpg.rend.hgtvcom.1280.720.suffix/1519669666497.jpeg"
+                }
+                p {
+                    class: "p-5 text-center",
+                    "Recipe Name"
+                }
+            }
+        }
+    ))
+}
+
+#[inline_props]
 fn Sidebar<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>) -> Element {
     let cookbooks = state.iter().enumerate().map(|(i,cookbook)| rsx!(
-        SidebarItem { title: &cookbook.title, icon: Shape::BookOpen, onclick: move |_e| {view.set(View::Cookbook(i))} }
+        SidebarItem { title: &cookbook.title, icon: Shape::BookOpen, selected: is_cookbook_selected(&view, i), onclick: move |_e| {view.set(View::Cookbook(i))} }
     ));
 
     cx.render(rsx! (
         div {
-            class: "fixed flex flex-col top-0 left-0 w-64 bg-white h-full border-r",
+            class: "sidebar",
             div {
                 class: "overflow-y-auto overflow-x-hidden flex-grow",
                 ul {
@@ -76,17 +131,13 @@ fn Sidebar<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cook
                     SidebarHeader { title: "COOKBOOKS" }
                     cookbooks
                     SidebarHeader { title: "MEAL PLANNER" }
-                    SidebarItem   { title: "Weekly meals", icon: Shape::PencilSquare, onclick: |_e| {println!("TODO!")} }
-                    SidebarItem   { title: "Thanksgiving", icon: Shape::PencilSquare, onclick: |_e| {println!("TODO!")} }
+                    SidebarItem   { title: "Weekly meals", icon: Shape::PencilSquare, onclick: |_e| {println!("TODO!")}, selected: false }
+                    SidebarItem   { title: "Thanksgiving", icon: Shape::PencilSquare, selected: false, onclick: |_e| {println!("TODO!")} }
                     SidebarHeader { title: "SETTINGS" }
-                    SidebarItem   { title: "Account", icon: Shape::User, onclick: |_e| {println!("TODO!")} }
-                    SidebarItem   { title: "Logout", icon: Shape::ArrowRightOnRectangle, onclick: |_e| {println!("TODO!")} }
+                    SidebarItem   { title: "Account", icon: Shape::User, selected: false, onclick: |_e| {println!("TODO!")} }
+                    SidebarItem   { title: "Logout", icon: Shape::ArrowRightOnRectangle, selected: false, onclick: |_e| {println!("TODO!")} }
                 }
             }
-        }
-        div {
-            // class: "flex flex-col",
-            "TEST!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
         }
     ))
 }
@@ -116,14 +167,15 @@ pub struct SidebarItemProps<'a> {
     title: &'a str,
     icon: Shape,
     onclick: EventHandler<'a, MouseEvent>,
+    selected: bool,
 }
 
 pub fn SidebarItem<'a>(cx: Scope<'a, SidebarItemProps<'a>>) -> Element {
+    let is_selected = if cx.props.selected {"selected"} else {""};
     cx.render(rsx! (
         li {
-            a {
-                class: "relative flex flex-row items-center h-11 focus:outline-none hover:bg-gray-50 text-gray-600 hover:text-gray-800 border-l-4 border-transparent hover:border-indigo-500 pr-6",
-                href: "#",
+            div {
+                class: format_args!("sidebar-item {}", is_selected),
                 onclick: |e| cx.props.onclick.call(e),
                 span {
                     class: "inline-flex justify-center items-center ml-4",
