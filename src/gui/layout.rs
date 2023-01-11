@@ -75,9 +75,22 @@ fn CookbookView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec
                     RecipePill {}
                     RecipePill {}
                     div {
-                        class: "rounded-xl border m-3 p-5 basis-1/3",
-                        onclick: |_e| {println!("TODO!")},
-                        "New Recipe"
+                        class: "basis-1/3",
+                        div {
+                            class: "recipe-card",
+                            onclick: |_e| {println!("TODO!")},
+                            div {
+                                class: "new-recipe",
+                                Icon {
+                                    class: "w-14 h-14",
+                                    icon: Shape::Plus,
+                                }
+                            }
+                            p {
+                                class: "p-5 text-center",
+                                "New Recipe"
+                            }
+                        }
                     }
                 }
             }
@@ -101,14 +114,17 @@ fn RecipePill(cx: Scope) -> Element {
         div {
             class: "basis-1/3",
             div {
-                class: "rounded-xl border m-3 min-w-fit",
+                class: "recipe-card",
                 onclick: |_e| {println!("TODO!")},
                 img {
                     src: "https://food.fnr.sndimg.com/content/dam/images/food/fullset/2008/8/14/0/GT0107_kalbi_s4x3.jpg.rend.hgtvcom.1280.720.suffix/1519669666497.jpeg"
                 }
-                p {
-                    class: "p-5 text-center",
-                    "Recipe Name"
+                div {
+                    class: "border-t",
+                    p {
+                        class: "p-5 text-center",
+                        "Recipe Name"
+                    }
                 }
             }
         }

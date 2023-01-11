@@ -40,6 +40,16 @@ body {
     @apply ml-64 grow border-t;
 }
 
+.recipe-card {
+    @apply rounded-xl overflow-hidden border m-3;
+		min-width: 158px;
+}
+
+.new-recipe {
+    @apply rounded-full border-2 border-dashed p-6 mt-6 mx-auto mb-2;
+    width: 108px;
+}
+
 *, a, button {
     cursor: default;
     user-select: none;
