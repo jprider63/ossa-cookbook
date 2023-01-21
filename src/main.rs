@@ -1,5 +1,7 @@
 use dioxus::prelude::*;
 use dioxus_desktop::tao::menu::{MenuBar, MenuItem, MenuItemAttributes};
+use std::collections::BTreeMap;
+
 use crate::state::*;
 
 mod gui;
@@ -104,8 +106,18 @@ fn main() {
 
 fn app(cx: Scope) -> Element {
     let state = use_state(&cx, || {
-        let book1 = Cookbook {title: "Family Recipes".into(), recipes: vec![]};
-        let book2 = Cookbook {title: "My Recipes".into(), recipes: vec![]};
+        let recipe = Recipe {
+            title: "Kalbi".into(),
+            ingredients: vec![],
+            instructions: "TODO".into(),
+            image: vec![],
+        };
+        let recipes = BTreeMap::from([
+                                      (0, recipe.clone()),
+
+        ]);
+        let book1 = Cookbook {title: "Family Recipes".into(), recipes: recipes.clone()};
+        let book2 = Cookbook {title: "My Recipes".into(), recipes: recipes};
         vec![book1, book2]
         // TODO: Should be a Map CRDT. Include other store metadata like sharing/permissions, peers, etc
     });

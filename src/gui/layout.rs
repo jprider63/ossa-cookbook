@@ -3,12 +3,13 @@ use dioxus::prelude::*;
 use dioxus_heroicons::{Icon, solid::Shape};
 // TODO: Fix outline icons.
 
-use crate::state::{Cookbook, CookbookId};
+use crate::state::{Cookbook, CookbookId, RecipeId, Recipe};
 
 enum View {
     Login,
     NoSelection,
     Cookbook(CookbookId),
+    CookbookRecipe(CookbookId, RecipeId),
 }
 
 fn is_cookbook_selected(view: &View, cid: CookbookId) -> bool {
@@ -16,6 +17,7 @@ fn is_cookbook_selected(view: &View, cid: CookbookId) -> bool {
         View::Login => false,
         View::NoSelection => false,
         View::Cookbook(vid) => *vid == cid,
+        View::CookbookRecipe(vid, _rid) => *vid == cid,
     }
 }
 
@@ -29,6 +31,7 @@ pub fn layout<'a>(cx: Scope, state: &'a UseState<Vec<Cookbook>>) -> Element {
         View::Login => todo!(),
         View::NoSelection => rsx! ( NoSelectionView { view: view, state: state } ),
         View::Cookbook(cookbookid) => rsx! ( CookbookView { view: view, state: state, cookbook_id: cookbookid } ),
+        View::CookbookRecipe(cookbookid, recipeid) => rsx! ( CookbookRecipeView { view: view, state: state, cookbook_id: cookbookid, recipe_id: recipeid } ),
     };
     cx.render(rsx!(
         div {
@@ -55,6 +58,9 @@ fn NoSelectionView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<
 #[inline_props]
 fn CookbookView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId) -> Element {
     if let Some(cookbook) = state.current().get(*cookbook_id) {
+        let pills = cookbook.recipes.iter().map(|(recipe_id, recipe)| { rsx! (
+            RecipePill { view: view, cookbook_id: *cookbook_id, recipe_id: *recipe_id }
+        )});
         cx.render(rsx! (
             Sidebar { view: view, state: state }
             div {
@@ -68,12 +74,7 @@ fn CookbookView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec
                 }
                 div {
                     class: "flex flex-row flex-wrap",
-                    RecipePill {}
-                    RecipePill {}
-                    RecipePill {}
-                    RecipePill {}
-                    RecipePill {}
-                    RecipePill {}
+                    pills
                     div {
                         class: "basis-1/3",
                         div {
@@ -108,14 +109,21 @@ fn CookbookView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec
 }
 
 #[inline_props]
+fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId, recipe_id: RecipeId) -> Element {
+    cx.render(rsx! (
+        "TODO"
+    ))
+}
+
+#[inline_props]
 // fn RecipePill<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId) -> Element {
-fn RecipePill(cx: Scope) -> Element {
+fn RecipePill<'a>(cx: Scope, view: &'a UseState<View>, cookbook_id: CookbookId, recipe_id: RecipeId) -> Element {
     cx.render(rsx! (
         div {
             class: "basis-1/3",
             div {
                 class: "recipe-card",
-                onclick: |_e| {println!("TODO!")},
+                onclick: |_e| {view.set(View::CookbookRecipe(*cookbook_id, *recipe_id))},
                 img {
                     src: "https://food.fnr.sndimg.com/content/dam/images/food/fullset/2008/8/14/0/GT0107_kalbi_s4x3.jpg.rend.hgtvcom.1280.720.suffix/1519669666497.jpeg"
                 }
