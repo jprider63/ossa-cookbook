@@ -41,7 +41,7 @@ body {
 }
 
 .recipe-card {
-    @apply rounded-xl overflow-hidden border m-3;
+    @apply rounded-xl overflow-hidden border m-3 hover:bg-gray-50 hover:text-gray-900;
 		min-width: 158px;
 }
 
