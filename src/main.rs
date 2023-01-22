@@ -114,7 +114,12 @@ fn app(cx: Scope) -> Element {
         };
         let recipes = BTreeMap::from([
                                       (0, recipe.clone()),
-
+                                      (1, recipe.clone()),
+                                      (2, recipe.clone()),
+                                      (3, recipe.clone()),
+                                      (4, recipe.clone()),
+                                      (5, recipe.clone()),
+                                      (6, recipe.clone()),
         ]);
         let book1 = Cookbook {title: "Family Recipes".into(), recipes: recipes.clone()};
         let book2 = Cookbook {title: "My Recipes".into(), recipes: recipes};

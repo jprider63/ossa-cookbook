@@ -59,7 +59,7 @@ fn NoSelectionView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<
 fn CookbookView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId) -> Element {
     if let Some(cookbook) = state.current().get(*cookbook_id) {
         let pills = cookbook.recipes.iter().map(|(recipe_id, recipe)| { rsx! (
-            RecipePill { view: view, cookbook_id: *cookbook_id, recipe_id: *recipe_id }
+            RecipePill { view: view, cookbook_id: *cookbook_id, recipe_id: *recipe_id, recipe: recipe.clone() } // TODO: Can we avoid this clone?
         )});
         cx.render(rsx! (
             Sidebar { view: view, state: state }
@@ -111,13 +111,46 @@ fn CookbookView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec
 #[inline_props]
 fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId, recipe_id: RecipeId) -> Element {
     cx.render(rsx! (
-        "TODO"
+        Sidebar { view: view, state: state }
+        div {
+            class: "content",
+            nav {
+                class: "flex w-full",
+                div {
+                    class: "flex-1 flex justify-start mr-auto",
+                    div {
+                        // class: "flex flex-row",
+                        onclick: |_e| {view.set(View::Cookbook(*cookbook_id))},
+                        Icon {
+                            // class: "w-14 h-14",
+                            icon: Shape::ChevronLeft,
+                        },
+                        "TODO: Cookbook"
+                    }
+                }
+                div {
+                    "TODO: Recipe"
+                }
+                div {
+                    class: "flex-1 flex justify-end ml-auto",
+                    "TODO: Edit"
+                }
+            }
+            div {
+            "TODO: Image carousel"
+            }
+            div {
+            "TODO: Ingredients"
+            }
+            div {
+            "TODO: Instructions"
+            }
+        }
     ))
 }
 
 #[inline_props]
-// fn RecipePill<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId) -> Element {
-fn RecipePill<'a>(cx: Scope, view: &'a UseState<View>, cookbook_id: CookbookId, recipe_id: RecipeId) -> Element {
+fn RecipePill<'a>(cx: Scope, view: &'a UseState<View>, cookbook_id: CookbookId, recipe_id: RecipeId, recipe: Recipe) -> Element {
     cx.render(rsx! (
         div {
             class: "basis-1/3",
@@ -131,7 +164,7 @@ fn RecipePill<'a>(cx: Scope, view: &'a UseState<View>, cookbook_id: CookbookId, 
                     class: "border-t",
                     p {
                         class: "p-5 text-center",
-                        "Recipe Name"
+                        "{recipe.title}"
                     }
                 }
             }
