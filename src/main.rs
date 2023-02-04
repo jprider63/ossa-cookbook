@@ -109,7 +109,7 @@ fn app(cx: Scope) -> Element {
         let recipe = Recipe {
             title: "Kalbi".into(),
             ingredients: vec!["1oz Soy sauce".into(), "1lb Beef Ribs".into()],
-            instructions: "TODO".into(),
+            instructions: "1. Grill meat\n2. ...".into(),
             image: vec![],
         };
         let recipes = BTreeMap::from([

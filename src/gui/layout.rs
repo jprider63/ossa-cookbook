@@ -154,7 +154,9 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
                     "TODO: Image carousel"
                     }
                     div {
+                        class: "p-3",
                         h2 {
+                            class: "text-xl font-bold",
                             "Ingredients"
                         }
                         ul {
@@ -166,7 +168,12 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
                         }
                     }
                     div {
-                    "TODO: Instructions"
+                        class: "p-3",
+                        h2 {
+                            class: "text-xl font-bold",
+                            "Instructions"
+                        }
+                        "{recipe.instructions}"
                     }
                 }
             ))
