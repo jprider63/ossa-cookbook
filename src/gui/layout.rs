@@ -48,7 +48,7 @@ fn NoSelectionView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<
         div {
             class: "content",
             div {
-                class: "flex justify-center items-center h-screen font-bold",
+                class: "flex justify-center items-center h-screen",
                 "No selection" // No selection. | New cookbook | | New meal planner |
             }
         }
@@ -110,43 +110,72 @@ fn CookbookView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec
 
 #[inline_props]
 fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId, recipe_id: RecipeId) -> Element {
-    cx.render(rsx! (
-        Sidebar { view: view, state: state }
-        div {
-            class: "content",
-            nav {
-                class: "flex w-full",
+    if let Some(cookbook) = state.current().get(*cookbook_id) {
+        if let Some(recipe) = cookbook.recipes.get(recipe_id) {
+            cx.render(rsx! (
+                Sidebar { view: view, state: state }
                 div {
-                    class: "flex-1 flex justify-start mr-auto",
+                    class: "content",
+                    nav {
+                        class: "flex w-full",
+                        div {
+                            class: "flex-1 flex justify-start mr-auto whitespace-nowrap",
+                            div {
+                                class: "text-blue-500 hover:text-blue-400 inline-flex items-center",
+                                onclick: |_e| {view.set(View::Cookbook(*cookbook_id))},
+                                Icon {
+                                    class: "w-6 h-6",
+                                    icon: Shape::ChevronLeft,
+                                },
+                                span {
+                                    "{cookbook.title}"
+                                }
+                            }
+                        }
+                        div {
+                            class: "whitespace-nowrap",
+                            h1 {
+                                class: "text-3xl font-bold mt-4 mb-6 text-center",
+                                    "{recipe.title}"
+                            }
+                        }
+                        div {
+                            class: "flex-1 flex justify-end ml-auto whitespace-nowrap",
+                            onclick: |_e| {println!("TODO!")},
+                            div {
+                                class: "text-blue-500 hover:text-blue-400 inline-flex items-center",
+                                span {
+                                    "Edit"
+                                }
+                            }
+                        }
+                    }
                     div {
-                        // class: "flex flex-row",
-                        onclick: |_e| {view.set(View::Cookbook(*cookbook_id))},
-                        Icon {
-                            // class: "w-14 h-14",
-                            icon: Shape::ChevronLeft,
-                        },
-                        "TODO: Cookbook"
+                    "TODO: Image carousel"
+                    }
+                    div {
+                        h2 {
+                            "Ingredients"
+                        }
+                        ul {
+                            recipe.ingredients.iter().map(|ingredient| rsx! (
+                                li {
+                                    "{ingredient}"
+                                }
+                            ))
+                        }
+                    }
+                    div {
+                    "TODO: Instructions"
                     }
                 }
-                div {
-                    "TODO: Recipe"
-                }
-                div {
-                    class: "flex-1 flex justify-end ml-auto",
-                    "TODO: Edit"
-                }
-            }
-            div {
-            "TODO: Image carousel"
-            }
-            div {
-            "TODO: Ingredients"
-            }
-            div {
-            "TODO: Instructions"
-            }
+            ))
+        } else {
+            unimplemented!()
         }
-    ))
+    } else {
+        unimplemented!()
+    }
 }
 
 #[inline_props]

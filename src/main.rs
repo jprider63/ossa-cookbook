@@ -108,7 +108,7 @@ fn app(cx: Scope) -> Element {
     let state = use_state(&cx, || {
         let recipe = Recipe {
             title: "Kalbi".into(),
-            ingredients: vec![],
+            ingredients: vec!["1oz Soy sauce".into(), "1lb Beef Ribs".into()],
             instructions: "TODO".into(),
             image: vec![],
         };
