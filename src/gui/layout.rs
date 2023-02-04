@@ -117,11 +117,11 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
                 div {
                     class: "content",
                     nav {
-                        class: "flex w-full",
+                        class: "flex w-full mt-4 mb-6",
                         div {
                             class: "flex-1 flex justify-start mr-auto whitespace-nowrap",
                             div {
-                                class: "text-blue-500 hover:text-blue-400 inline-flex items-center",
+                                class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
                                 onclick: |_e| {view.set(View::Cookbook(*cookbook_id))},
                                 Icon {
                                     class: "w-6 h-6",
@@ -135,15 +135,15 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
                         div {
                             class: "whitespace-nowrap",
                             h1 {
-                                class: "text-3xl font-bold mt-4 mb-6 text-center",
+                                class: "text-3xl font-bold text-center",
                                     "{recipe.title}"
                             }
                         }
                         div {
                             class: "flex-1 flex justify-end ml-auto whitespace-nowrap",
-                            onclick: |_e| {println!("TODO!")},
                             div {
-                                class: "text-blue-500 hover:text-blue-400 inline-flex items-center",
+                                class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
+                                onclick: |_e| {println!("TODO!")},
                                 span {
                                     "Edit"
                                 }
