@@ -3,6 +3,7 @@ use dioxus::prelude::*;
 use dioxus_heroicons::{Icon, solid::Shape};
 // TODO: Fix outline icons.
 
+use crate::gui::navbar::{self, Navbar};
 use crate::state::{Cookbook, CookbookId, RecipeId, Recipe};
 
 enum View {
@@ -112,10 +113,25 @@ fn CookbookView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec
 fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId, recipe_id: RecipeId) -> Element {
     if let Some(cookbook) = state.current().get(*cookbook_id) {
         if let Some(recipe) = cookbook.recipes.get(recipe_id) {
+            // let left = navbar::Button {
+            //     text: &cookbook.title,
+            //     icon: Some(Shape::ChevronLeft),
+            //     // onclick: Box::new(|_e| {view.set(View::Cookbook(*cookbook_id))}),
+            // };
+            // let right = navbar::Button {
+            //     text: &cookbook.title,
+            //     icon: Some(Shape::ChevronLeft),
+            //     // onclick: Box::new(|_e| {view.set(View::Cookbook(*cookbook_id))}),
+            // };
+            // let nav_bar = navbar::view(&recipe.title, Some(left), Some(right));
             cx.render(rsx! (
                 Sidebar { view: view, state: state }
                 div {
                     class: "content",
+                    Navbar {
+                        title: &recipe.title,
+                        // left_button: left,
+                    },
                     nav {
                         class: "flex w-full mt-4 mb-6",
                         div {
