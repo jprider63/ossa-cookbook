@@ -50,7 +50,7 @@ body {
     width: 108px;
 }
 
-*, a, button {
+*:not(input[type=text], input[type=password], textarea), a, button {
     cursor: default;
     user-select: none;
 }

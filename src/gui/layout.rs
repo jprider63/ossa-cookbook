@@ -1,4 +1,5 @@
 use dioxus::events::MouseEvent;
+use dioxus_markdown::Markdown;
 use dioxus::prelude::*;
 use dioxus_heroicons::{Icon, solid::Shape};
 // TODO: Fix outline icons.
@@ -10,6 +11,7 @@ enum View {
     NoSelection,
     Cookbook(CookbookId),
     CookbookRecipe(CookbookId, RecipeId),
+    CookbookRecipeEdit(CookbookId, RecipeId),
 }
 
 fn is_cookbook_selected(view: &View, cid: CookbookId) -> bool {
@@ -18,6 +20,7 @@ fn is_cookbook_selected(view: &View, cid: CookbookId) -> bool {
         View::NoSelection => false,
         View::Cookbook(vid) => *vid == cid,
         View::CookbookRecipe(vid, _rid) => *vid == cid,
+        View::CookbookRecipeEdit(vid, _rid) => *vid == cid,
     }
 }
 
@@ -32,6 +35,7 @@ pub fn layout<'a>(cx: Scope, state: &'a UseState<Vec<Cookbook>>) -> Element {
         View::NoSelection => rsx! ( NoSelectionView { view: view, state: state } ),
         View::Cookbook(cookbookid) => rsx! ( CookbookView { view: view, state: state, cookbook_id: cookbookid } ),
         View::CookbookRecipe(cookbookid, recipeid) => rsx! ( CookbookRecipeView { view: view, state: state, cookbook_id: cookbookid, recipe_id: recipeid } ),
+        View::CookbookRecipeEdit(cookbookid, recipeid) => rsx! ( CookbookRecipeEditView { view: view, state: state, cookbook_id: cookbookid, recipe_id: recipeid } ),
     };
     cx.render(rsx!(
         div {
@@ -143,7 +147,7 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
                             class: "flex-1 flex justify-end ml-auto whitespace-nowrap",
                             div {
                                 class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
-                                onclick: |_e| {println!("TODO!")},
+                                onclick: |_e| {view.set(View::CookbookRecipeEdit(*cookbook_id, *recipe_id))},
                                 span {
                                     "Edit"
                                 }
@@ -151,7 +155,7 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
                         }
                     }
                     div {
-                    "TODO: Image carousel"
+                        "TODO: Image carousel"
                     }
                     div {
                         class: "p-3",
@@ -173,7 +177,97 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
                             class: "text-xl font-bold",
                             "Instructions"
                         }
-                        "{recipe.instructions}"
+                        "{recipe.instructions}",
+                        // Markdown {
+                        //     content: &recipe.instructions,
+                        // }
+                    }
+                }
+            ))
+        } else {
+            unimplemented!()
+        }
+    } else {
+        unimplemented!()
+    }
+}
+
+#[inline_props]
+fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId, recipe_id: RecipeId) -> Element {
+    // let md = use_state(&cx, || {
+    //     let x:String = "example".into();
+    //     x
+    // });
+    // let x = md.current();
+    // cx.render(rsx! (
+    //     Markdown {
+    //         content: &x,
+    //     }
+    // ))
+
+    if let Some(cookbook) = state.current().get(*cookbook_id) {
+        if let Some(recipe) = cookbook.recipes.get(recipe_id) {
+            let name = use_state(&cx, || recipe.title.clone());
+            cx.render(rsx! (
+                Sidebar { view: view, state: state }
+                div {
+                    class: "content",
+                    nav {
+                        class: "flex w-full mt-4 mb-6",
+                        div {
+                            class: "flex-1 flex justify-start mr-auto whitespace-nowrap",
+                            div {
+                                class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
+                                onclick: |_e| {view.set(View::CookbookRecipe(*cookbook_id, *recipe_id))},
+                                Icon {
+                                    class: "w-6 h-6",
+                                    icon: Shape::ChevronLeft,
+                                },
+                                span {
+                                    "Cancel" // "{recipe.title}"
+                                }
+                            }
+                        }
+                        div {
+                            class: "whitespace-nowrap",
+                            h1 {
+                                class: "text-3xl font-bold text-center",
+                                    "Edit Recipe"
+                            }
+                        }
+                        div {
+                            class: "flex-1 flex justify-end ml-auto whitespace-nowrap",
+                            div {
+                                class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
+                                onclick: |_e| {println!("TODO!")},
+                                span {
+                                    "Save"
+                                }
+                            }
+                        }
+                    }
+                    div {
+                        div {
+                            label {
+                                class: "font-bold",
+                                r#for: "recipename",
+                                "Name"
+                            }
+                            input {
+                                class: "appearance-none border rounded",
+                                r#id: "recipename",
+                                r#type: "text",
+                                placeholder: "Name",
+                                // oninput: move |evt| name.set(evt.value.clone()),
+                                // onchange: move |evt| {
+                                oninput: move |evt| {
+                                    println!("{}", evt.value);
+                                    name.set(evt.value.clone())
+                                },
+                                value: "{name}"
+                            }
+                        }
+                        "TODO: Images",
                     }
                 }
             ))

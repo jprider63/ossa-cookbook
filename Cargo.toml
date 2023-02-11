@@ -9,4 +9,5 @@ edition = "2021"
 dioxus = {version = "0.3.1"}
 dioxus-desktop = "0.3.0"
 dioxus-heroicons = {path = "/Users/james/Documents/Projects/dioxus-heroicons/"}
+dioxus_markdown = {path = "/Users/james/Documents/Projects/dioxus-markdown/"}
 im = "15.1.0"
