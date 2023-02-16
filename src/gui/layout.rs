@@ -205,9 +205,42 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
     //     }
     // ))
 
-    if let Some(cookbook) = state.current().get(*cookbook_id) {
+    let cookbooks = state.current();
+    if let Some(cookbook) = cookbooks.get(*cookbook_id) {
         if let Some(recipe) = cookbook.recipes.get(recipe_id) {
+            let old_recipe: Recipe = recipe.clone();
+            let old_cookbook: Cookbook = cookbook.clone();
+
+            // JP: I don't understand why this isn't saved across component reloads.
             let name = use_state(&cx, || recipe.title.clone());
+            fn validate_name(_name: &str) -> Result<(), &'static str> {
+                Ok(())
+            }
+
+            let save_handler = move |mut _e| {
+                // Validate all fields.
+                let new_name = name.get();
+                if validate_name(new_name).is_err() {
+                    return;
+                }
+
+                // Diff all fields.
+                let mut new_recipe = old_recipe.clone();
+                if old_recipe.title != *new_name {
+                    new_recipe.title = new_name.clone();
+                }
+
+                // Save updated fields.
+                // TODO: Send CRDT operations
+                let mut new_cookbook = old_cookbook.clone();
+                new_cookbook.recipes.insert(*recipe_id, new_recipe);
+                let mut new_cookbooks: Vec<Cookbook> = cookbooks.clone().to_vec();
+                new_cookbooks[*cookbook_id] = new_cookbook;
+                state.set(new_cookbooks);
+
+                view.set(View::CookbookRecipe(*cookbook_id, *recipe_id));
+            };
+
             cx.render(rsx! (
                 Sidebar { view: view, state: state }
                 div {
@@ -239,7 +272,7 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                             class: "flex-1 flex justify-end ml-auto whitespace-nowrap",
                             div {
                                 class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
-                                onclick: |_e| {println!("TODO!")},
+                                onclick: save_handler,
                                 span {
                                     "Save"
                                 }
@@ -258,12 +291,7 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                                 r#id: "recipename",
                                 r#type: "text",
                                 placeholder: "Name",
-                                // oninput: move |evt| name.set(evt.value.clone()),
-                                // onchange: move |evt| {
-                                oninput: move |evt| {
-                                    println!("{}", evt.value);
-                                    name.set(evt.value.clone())
-                                },
+                                oninput: move |evt| name.set(evt.value.clone()),
                                 value: "{name}"
                             }
                         }
