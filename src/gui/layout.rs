@@ -285,9 +285,11 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                         }
                     }
                     div {
+                        class: "w-full p-3",
                         div {
+                            class: "flex flex-col mb-4",
                             label {
-                                class: "font-bold",
+                                class: "font-bold mb-2",
                                 r#for: "recipename",
                                 "Name"
                             }
