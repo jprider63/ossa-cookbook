@@ -213,9 +213,14 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
 
             // JP: I don't understand why this isn't saved across component reloads.
             let name = use_state(&cx, || recipe.title.clone());
-            fn validate_name(_name: &str) -> Result<(), &'static str> {
-                Ok(())
+            fn validate_name(name: &str) -> Result<(), &'static str> {
+                if name.len() > 0 {
+                    Ok(())
+                } else {
+                    Err("Please enter a name.")
+                }
             }
+            let name_err = validate_name(name.get());
 
             let save_handler = move |mut _e| {
                 // Validate all fields.
@@ -287,13 +292,19 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                                 "Name"
                             }
                             input {
-                                class: "appearance-none border rounded",
+                                class: format_args!("appearance-none border rounded {}", if name_err.is_err() {"border-red-500"} else {""}),
                                 r#id: "recipename",
                                 r#type: "text",
                                 placeholder: "Name",
                                 oninput: move |evt| name.set(evt.value.clone()),
                                 value: "{name}"
                             }
+                            name_err.err().map(|err| rsx!(
+                                p {
+                                    class: format_args!("text-red-500 text-sm"),
+                                    "{err}"
+                                }
+                            ))
                         }
                         "TODO: Images",
                     }
