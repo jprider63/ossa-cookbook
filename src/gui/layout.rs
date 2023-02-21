@@ -177,10 +177,9 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
                             class: "text-xl font-bold",
                             "Instructions"
                         }
-                        "{recipe.instructions}",
-                        // Markdown {
-                        //     content: &recipe.instructions,
-                        // }
+                        Markdown {
+                            content: "{recipe.instructions}",
+                        }
                     }
                 }
             ))
@@ -194,17 +193,6 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
 
 #[inline_props]
 fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId, recipe_id: RecipeId) -> Element {
-    // let md = use_state(&cx, || {
-    //     let x:String = "example".into();
-    //     x
-    // });
-    // let x = md.current();
-    // cx.render(rsx! (
-    //     Markdown {
-    //         content: &x,
-    //     }
-    // ))
-
     let cookbooks = state.current();
     if let Some(cookbook) = cookbooks.get(*cookbook_id) {
         if let Some(recipe) = cookbook.recipes.get(recipe_id) {
