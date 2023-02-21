@@ -179,11 +179,9 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
                             class: "text-xl font-bold",
                             "Instructions"
                         }
-                        div {
+                        Markdown {
                             class: "instructions selectable",
-                            Markdown {
-                                content: "{recipe.instructions}",
-                            }
+                            content: "{recipe.instructions}",
                         }
                     }
                 }
@@ -339,7 +337,7 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                                 oninput: move |evt| instructions.set(evt.value.clone()),
                                 value: "{instructions}"
                             }
-                            name_err.err().map(|err| rsx!(
+                            instructions_err.err().map(|err| rsx!(
                                 p {
                                     class: format_args!("text-red-500 text-sm"),
                                     "{err}"

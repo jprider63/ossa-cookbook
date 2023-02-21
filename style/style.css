@@ -70,3 +70,6 @@ body {
     list-style-position: inside;
 }
 
+.instructions {
+    @apply space-y-3;
+}
