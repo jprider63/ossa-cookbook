@@ -177,8 +177,11 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
                             class: "text-xl font-bold",
                             "Instructions"
                         }
-                        Markdown {
-                            content: "{recipe.instructions}",
+                        div {
+                            class: "instructions",
+                            Markdown {
+                                content: "{recipe.instructions}",
+                            }
                         }
                     }
                 }
