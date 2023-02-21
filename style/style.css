@@ -50,9 +50,14 @@ body {
     width: 108px;
 }
 
-*:not(input[type=text], input[type=password], textarea), a, button {
+*:not(input[type=text], input[type=password], textarea, .selectable, .selectable *) {
     cursor: default;
     user-select: none;
+}
+
+.selectable {
+    cursor: auto;
+    user-select: auto;
 }
 
 .instructions ul {

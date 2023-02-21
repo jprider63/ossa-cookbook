@@ -164,6 +164,7 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
                             "Ingredients"
                         }
                         ul {
+                            class: "selectable",
                             recipe.ingredients.iter().map(|ingredient| rsx! (
                                 li {
                                     "{ingredient}"
@@ -178,7 +179,7 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
                             "Instructions"
                         }
                         div {
-                            class: "instructions",
+                            class: "instructions selectable",
                             Markdown {
                                 content: "{recipe.instructions}",
                             }
