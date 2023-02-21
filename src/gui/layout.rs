@@ -155,6 +155,7 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
                         }
                     }
                     div {
+                        class: "p-3",
                         "TODO: Image carousel"
                     }
                     div {
@@ -206,18 +207,30 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
             // JP: I don't understand why this isn't saved across component reloads.
             let name = use_state(&cx, || recipe.title.clone());
             fn validate_name(name: &str) -> Result<(), &'static str> {
-                if name.len() > 0 {
-                    Ok(())
-                } else {
+                if name.len() == 0 {
                     Err("Please enter a name.")
+                } else {
+                    Ok(())
                 }
             }
             let name_err = validate_name(name.get());
 
+            let instructions = use_state(&cx, || recipe.instructions.clone());
+            fn validate_instructions(instructions: &str) -> Result<(), &'static str> {
+                if instructions.len() == 0 {
+                    Err("Please enter instructions.")
+                } else {
+                    Ok(())
+                }
+            }
+            let instructions_err = validate_instructions(instructions.get());
+
             let save_handler = move |mut _e| {
                 // Validate all fields.
                 let new_name = name.get();
-                if validate_name(new_name).is_err() {
+                let new_instructions = instructions.get();
+                if validate_name(new_name).is_err()
+                || validate_instructions(new_instructions).is_err() {
                     return;
                 }
 
@@ -225,6 +238,9 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                 let mut new_recipe = old_recipe.clone();
                 if old_recipe.title != *new_name {
                     new_recipe.title = new_name.clone();
+                }
+                if old_recipe.instructions != *new_instructions {
+                    new_recipe.instructions = new_instructions.clone();
                 }
 
                 // Save updated fields.
@@ -300,7 +316,36 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                                 }
                             ))
                         }
-                        "TODO: Images",
+                        div {
+                            class: "flex flex-col mb-4",
+                            "TODO: Images",
+                        }
+                        div {
+                            class: "flex flex-col mb-4",
+                            label {
+                                class: "font-bold mb-2",
+                                r#for: "recipeinstructions",
+                                "Instructions"
+                            }
+                            textarea {
+                                class: format_args!("p-2.5 appearance-none border rounded {}", if instructions_err.is_err() {"border-red-500"} else {""}),
+                                r#id: "recipeinstructions",
+                                r#rows: 10,
+                                autocomplete: "false",
+                                "autocorrect": "false",
+                                autocapitalize: "false",
+                                spellcheck: "false",
+                                placeholder: "Instructions",
+                                oninput: move |evt| instructions.set(evt.value.clone()),
+                                value: "{instructions}"
+                            }
+                            name_err.err().map(|err| rsx!(
+                                p {
+                                    class: format_args!("text-red-500 text-sm"),
+                                    "{err}"
+                                }
+                            ))
+                        }
                     }
                 }
             ))
