@@ -4,6 +4,7 @@ use dioxus::prelude::*;
 use dioxus_heroicons::{Icon, solid::Shape};
 // TODO: Fix outline icons.
 
+use crate::gui::form::{TextField};
 use crate::state::{Cookbook, CookbookId, RecipeId, Recipe};
 
 enum View {
@@ -303,27 +304,11 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                     }
                     div {
                         class: "w-full p-3",
-                        div {
-                            class: "flex flex-col mb-4",
-                            label {
-                                class: "font-bold mb-2",
-                                r#for: "recipename",
-                                "Name"
-                            }
-                            input {
-                                class: format_args!("appearance-none border rounded py-1 px-2 {}", if name_err.is_err() {"border-red-500"} else {""}),
-                                r#id: "recipename",
-                                r#type: "text",
-                                placeholder: "Name",
-                                oninput: move |evt| name.set(evt.value.clone()),
-                                value: "{name}"
-                            }
-                            name_err.err().map(|err| rsx!(
-                                p {
-                                    class: format_args!("text-red-500 text-sm"),
-                                    "{err}"
-                                }
-                            ))
+                        TextField {
+                            title: "Name",
+                            id: "recipename",
+                            state: name,
+                            validation_fn: validate_name,
                         }
                         div {
                             class: "flex flex-col mb-4",
