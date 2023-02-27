@@ -213,6 +213,17 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
             }
             let name_err = validate_name(name.get());
 
+            let ingredients = use_state(&cx, || recipe.ingredients.clone());
+            let new_ingredient: &UseState<String> = use_state(&cx, || "".into());
+            fn validate_ingredient(ingredient: &str) -> Result<(), &'static str> {
+                // if ingredient.len() == 0 {
+                //     Err("Please enter an ingredient.")
+                // } else {
+                    Ok(())
+                // }
+            }
+            let new_ingredient_err = validate_ingredient(new_ingredient.get());
+
             let instructions = use_state(&cx, || recipe.instructions.clone());
             fn validate_instructions(instructions: &str) -> Result<(), &'static str> {
                 if instructions.len() == 0 {
@@ -300,7 +311,7 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                                 "Name"
                             }
                             input {
-                                class: format_args!("appearance-none border rounded {}", if name_err.is_err() {"border-red-500"} else {""}),
+                                class: format_args!("appearance-none border rounded py-1 px-2 {}", if name_err.is_err() {"border-red-500"} else {""}),
                                 r#id: "recipename",
                                 r#type: "text",
                                 placeholder: "Name",
@@ -322,11 +333,31 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                             class: "flex flex-col mb-4",
                             label {
                                 class: "font-bold mb-2",
+                                r#for: "recipeingredients-0",
+                                "Ingredients"
+                            }
+                            input {
+                                class: format_args!("appearance-none border rounded py-1 px-2 {}", if new_ingredient_err.is_err() {"border-red-500"} else {""}),
+                                r#id: format_args!("recipeingredients-{}", ingredients.len()),
+                                r#type: "text",
+                                placeholder: "Add ingredient...",
+                            }
+                            new_ingredient_err.err().map(|err| rsx!(
+                                p {
+                                    class: format_args!("text-red-500 text-sm"),
+                                    "{err}"
+                                }
+                            ))
+                        }
+                        div {
+                            class: "flex flex-col mb-4",
+                            label {
+                                class: "font-bold mb-2",
                                 r#for: "recipeinstructions",
                                 "Instructions"
                             }
                             textarea {
-                                class: format_args!("p-2.5 appearance-none border rounded {}", if instructions_err.is_err() {"border-red-500"} else {""}),
+                                class: format_args!("appearance-none border rounded py-1 px-2 {}", if instructions_err.is_err() {"border-red-500"} else {""}),
                                 r#id: "recipeinstructions",
                                 r#rows: 10,
                                 autocomplete: "false",
