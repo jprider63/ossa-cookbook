@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 use dioxus_heroicons::{Icon, solid::Shape};
 // TODO: Fix outline icons.
 
-use crate::gui::form::{TextField};
+use crate::gui::form::{FieldLabel, TextField};
 use crate::state::{Cookbook, CookbookId, RecipeId, Recipe};
 
 enum View {
@@ -212,7 +212,6 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                     Ok(())
                 }
             }
-            let name_err = validate_name(name.get());
 
             let ingredients = use_state(&cx, || recipe.ingredients.clone());
             let new_ingredient: &UseState<String> = use_state(&cx, || "".into());
@@ -304,15 +303,31 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                     }
                     div {
                         class: "w-full p-3",
-                        TextField {
-                            title: "Name",
+                        FieldLabel {
+                            label: "Name",
                             id: "recipename",
-                            state: name,
-                            validation_fn: validate_name,
+                            field: cx.render(rsx!( TextField {
+                                placeholder: "Name",
+                                id: "recipename",
+                                state: name,
+                                validation_fn: validate_name,
+                            }))
                         }
                         div {
                             class: "flex flex-col mb-4",
                             "TODO: Images",
+                        }
+                        FieldLabel {
+                            label: "Ingredients",
+                            id: "recipeingredients-0",
+                            field: cx.render(rsx!( TextField {
+                                placeholder: "Add ingredient...",
+                                // id: format_args!("recipeingredients-{}", ingredients.len()),
+                                id: "TODO",
+                                state: new_ingredient,
+                                validation_fn: validate_ingredient,
+
+                            }))
                         }
                         div {
                             class: "flex flex-col mb-4",
