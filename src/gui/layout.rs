@@ -329,7 +329,7 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                                             TextField {
                                                 placeholder: "Ingredient",
                                                 class: "w-full",
-                                                id: "recipeingredients-{idx}",
+                                                id: "recipeingredients-{idx}"
                                                 value: ingredient,
                                                 oninput: move |evt: Event<FormData>| ingredients.with_mut(|a| a[idx] = evt.value.clone()),
                                                 validation_fn: validate_ingredient,
