@@ -24,22 +24,24 @@ pub fn FieldLabel<'a>(cx: Scope<'a, FieldLabelProps<'a>>) -> Element {
 #[derive(Props)]
 pub struct TextFieldProps<'a> {
     id: &'a str,
+    class: Option<&'a str>,
     placeholder: &'a str,
-    state: &'a UseState<String>,
+    value: &'a str,
+    oninput: EventHandler<'a,Event<FormData>>,
     validation_fn: for<'b> fn(&'b str) -> Result<(), &'static str>,
 }
 
 pub fn TextField<'a>(cx: Scope<'a, TextFieldProps<'a>>) -> Element {
-    let err: Result<(), &'static str> = (cx.props.validation_fn)(cx.props.state.get());
+    let err: Result<(), &'static str> = (cx.props.validation_fn)(cx.props.value);
 
     cx.render(rsx! (
         input {
-            class: format_args!("appearance-none border rounded py-1 px-2 {}", if err.is_err() {"border-red-500"} else {""}),
+            class: format_args!("{} appearance-none border rounded py-1 px-2 {}", cx.props.class.unwrap_or(""), if err.is_err() {"border-red-500"} else {""}),
             r#id: cx.props.id,
             r#type: "text",
             placeholder: cx.props.placeholder,
-            oninput: move |evt| cx.props.state.set(evt.value.clone()),
-            value: "{cx.props.state}"
+            oninput: move |evt| cx.props.oninput.call(evt),
+            value: "{cx.props.value}"
         }
         err.err().map(|e| rsx!(
             p {

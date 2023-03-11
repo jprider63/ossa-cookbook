@@ -263,6 +263,7 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                 view.set(View::CookbookRecipe(*cookbook_id, *recipe_id));
             };
 
+            let last_id = format_args!("recipeingredients-{}", ingredients.len());
             cx.render(rsx! (
                 Sidebar { view: view, state: state }
                 div {
@@ -307,9 +308,10 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                             label: "Name",
                             id: "recipename",
                             field: cx.render(rsx!( TextField {
-                                placeholder: "Name",
+                                placeholder: "Recipe name",
                                 id: "recipename",
-                                state: name,
+                                value: name.get(),
+                                oninput: move |evt: Event<FormData>| name.set(evt.value.clone()),
                                 validation_fn: validate_name,
                             }))
                         }
@@ -320,14 +322,31 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                         FieldLabel {
                             label: "Ingredients",
                             id: "recipeingredients-0",
-                            field: cx.render(rsx!( TextField {
-                                placeholder: "Add ingredient...",
-                                // id: format_args!("recipeingredients-{}", ingredients.len()),
-                                id: "TODO",
-                                state: new_ingredient,
-                                validation_fn: validate_ingredient,
-
-                            }))
+                            field: cx.render(rsx!(
+                                ingredients.iter().enumerate().map(|(idx,ingredient)| {
+                                    // let i = format_args!("recipeingredients-{}",idx);
+                                    cx.render(rsx!(
+                                        div {
+                                            class: "mb-1 w-full",
+                                            TextField {
+                                                placeholder: "Ingredient",
+                                                class: "w-full",
+                                                id: "TODO", // "{i}",
+                                                value: ingredient,
+                                                oninput: move |evt: Event<FormData>| ingredients.with_mut(|a| a[idx] = evt.value.clone()),
+                                                validation_fn: validate_ingredient,
+                                            }
+                                        }
+                                    ))
+                                })
+                                TextField {
+                                    placeholder: "Add ingredient...",
+                                    id: "{last_id}"
+                                    value: new_ingredient.get(),
+                                    oninput: move |evt: Event<FormData>| new_ingredient.set(evt.value.clone()),
+                                    validation_fn: validate_ingredient,
+                                }
+                            ))
                         }
                         div {
                             class: "flex flex-col mb-4",
