@@ -263,7 +263,6 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                 view.set(View::CookbookRecipe(*cookbook_id, *recipe_id));
             };
 
-            let last_id = format_args!("recipeingredients-{}", ingredients.len());
             cx.render(rsx! (
                 Sidebar { view: view, state: state }
                 div {
@@ -324,14 +323,13 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                             id: "recipeingredients-0",
                             field: cx.render(rsx!(
                                 ingredients.iter().enumerate().map(|(idx,ingredient)| {
-                                    // let i = format_args!("recipeingredients-{}",idx);
                                     cx.render(rsx!(
                                         div {
                                             class: "mb-1 w-full",
                                             TextField {
                                                 placeholder: "Ingredient",
                                                 class: "w-full",
-                                                id: "TODO", // "{i}",
+                                                id: "recipeingredients-{idx}",
                                                 value: ingredient,
                                                 oninput: move |evt: Event<FormData>| ingredients.with_mut(|a| a[idx] = evt.value.clone()),
                                                 validation_fn: validate_ingredient,
@@ -341,7 +339,7 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                                 })
                                 TextField {
                                     placeholder: "Add ingredient...",
-                                    id: "{last_id}"
+                                    id: "recipeingredients-{ingredients.len()}",
                                     value: new_ingredient.get(),
                                     oninput: move |evt: Event<FormData>| new_ingredient.set(evt.value.clone()),
                                     validation_fn: validate_ingredient,
@@ -357,13 +355,13 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                             }
                             input {
                                 class: format_args!("appearance-none border rounded py-1 px-2 {}", if new_ingredient_err.is_err() {"border-red-500"} else {""}),
-                                r#id: format_args!("recipeingredients-{}", ingredients.len()),
+                                r#id: "recipeingredients-{ingredients.len()}",
                                 r#type: "text",
                                 placeholder: "Add ingredient...",
                             }
                             new_ingredient_err.err().map(|err| rsx!(
                                 p {
-                                    class: format_args!("text-red-500 text-sm"),
+                                    class: "text-red-500 text-sm",
                                     "{err}"
                                 }
                             ))
@@ -389,7 +387,7 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                             }
                             instructions_err.err().map(|err| rsx!(
                                 p {
-                                    class: format_args!("text-red-500 text-sm"),
+                                    class: "text-red-500 text-sm",
                                     "{err}"
                                 }
                             ))
