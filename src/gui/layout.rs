@@ -2,6 +2,7 @@ use dioxus::events::MouseEvent;
 use dioxus_markdown::Markdown;
 use dioxus::prelude::*;
 use dioxus_heroicons::{Icon, solid::Shape};
+use keyboard_types::Key;
 // TODO: Fix outline icons.
 
 use crate::gui::form::{FieldLabel, TextField};
@@ -237,8 +238,10 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
             let save_handler = move |mut _e| {
                 // Validate all fields.
                 let new_name = name.get();
+                let new_ingredients = ingredients.get();
                 let new_instructions = instructions.get();
                 if validate_name(new_name).is_err()
+                || new_ingredients.iter().any(|i| validate_ingredient(i).is_err())
                 || validate_instructions(new_instructions).is_err() {
                     return;
                 }
@@ -247,6 +250,9 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                 let mut new_recipe = old_recipe.clone();
                 if old_recipe.title != *new_name {
                     new_recipe.title = new_name.clone();
+                }
+                if old_recipe.ingredients != *new_ingredients {
+                    new_recipe.ingredients = new_ingredients.clone();
                 }
                 if old_recipe.instructions != *new_instructions {
                     new_recipe.instructions = new_instructions.clone();
@@ -342,27 +348,14 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                                     id: "recipeingredients-{ingredients.len()}",
                                     value: new_ingredient.get(),
                                     oninput: move |evt: Event<FormData>| new_ingredient.set(evt.value.clone()),
+                                    onkeyup: move |evt: Event<KeyboardData>| {
+                                        let i = new_ingredient.get();
+                                        if evt.key() == Key::Enter && validate_ingredient(i).is_ok() {
+                                            ingredients.with_mut(|a| a.push(i.clone()));
+                                            new_ingredient.set("".to_string());
+                                        }
+                                    }
                                     validation_fn: validate_ingredient,
-                                }
-                            ))
-                        }
-                        div {
-                            class: "flex flex-col mb-4",
-                            label {
-                                class: "font-bold mb-2",
-                                r#for: "recipeingredients-0",
-                                "Ingredients"
-                            }
-                            input {
-                                class: format_args!("appearance-none border rounded py-1 px-2 {}", if new_ingredient_err.is_err() {"border-red-500"} else {""}),
-                                r#id: "recipeingredients-{ingredients.len()}",
-                                r#type: "text",
-                                placeholder: "Add ingredient...",
-                            }
-                            new_ingredient_err.err().map(|err| rsx!(
-                                p {
-                                    class: "text-red-500 text-sm",
-                                    "{err}"
                                 }
                             ))
                         }

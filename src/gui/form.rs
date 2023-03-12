@@ -28,6 +28,7 @@ pub struct TextFieldProps<'a> {
     placeholder: &'a str,
     value: &'a str,
     oninput: EventHandler<'a,Event<FormData>>,
+    onkeyup: Option<EventHandler<'a,Event<KeyboardData>>>,
     validation_fn: for<'b> fn(&'b str) -> Result<(), &'static str>,
 }
 
@@ -41,6 +42,7 @@ pub fn TextField<'a>(cx: Scope<'a, TextFieldProps<'a>>) -> Element {
             r#type: "text",
             placeholder: cx.props.placeholder,
             oninput: move |evt| cx.props.oninput.call(evt),
+            onkeyup: move |evt| cx.props.onkeyup.as_ref().map_or((), |f| f.call(evt)),
             value: "{cx.props.value}"
         }
         err.err().map(|e| rsx!(
