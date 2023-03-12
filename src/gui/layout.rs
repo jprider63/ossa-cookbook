@@ -156,10 +156,10 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
                             }
                         }
                     }
-                    div {
-                        class: "p-3",
-                        "TODO: Image carousel"
-                    }
+                    // div {
+                    //     class: "p-3",
+                    //     "TODO: Image carousel"
+                    // }
                     div {
                         class: "p-3",
                         h2 {
@@ -320,10 +320,10 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                                 validation_fn: validate_name,
                             }))
                         }
-                        div {
-                            class: "flex flex-col mb-4",
-                            "TODO: Images",
-                        }
+                        // div {
+                        //     class: "flex flex-col mb-4",
+                        //     "TODO: Images",
+                        // }
                         FieldLabel {
                             label: "Ingredients",
                             id: "recipeingredients-0",
