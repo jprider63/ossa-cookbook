@@ -13,6 +13,7 @@ enum View {
     NoSelection,
     Cookbook(CookbookId),
     CookbookRecipe(CookbookId, RecipeId),
+    CookbookRecipeNew(CookbookId),
     CookbookRecipeEdit(CookbookId, RecipeId),
 }
 
@@ -22,6 +23,7 @@ fn is_cookbook_selected(view: &View, cid: CookbookId) -> bool {
         View::NoSelection => false,
         View::Cookbook(vid) => *vid == cid,
         View::CookbookRecipe(vid, _rid) => *vid == cid,
+        View::CookbookRecipeNew(vid) => *vid == cid,
         View::CookbookRecipeEdit(vid, _rid) => *vid == cid,
     }
 }
@@ -37,6 +39,7 @@ pub fn layout<'a>(cx: Scope, state: &'a UseState<Vec<Cookbook>>) -> Element {
         View::NoSelection => rsx! ( NoSelectionView { view: view, state: state } ),
         View::Cookbook(cookbookid) => rsx! ( CookbookView { view: view, state: state, cookbook_id: cookbookid } ),
         View::CookbookRecipe(cookbookid, recipeid) => rsx! ( CookbookRecipeView { view: view, state: state, cookbook_id: cookbookid, recipe_id: recipeid } ),
+        View::CookbookRecipeNew(cookbookid) => rsx! ( CookbookRecipeNewView { view: view, state: state, cookbook_id: cookbookid } ),
         View::CookbookRecipeEdit(cookbookid, recipeid) => rsx! ( CookbookRecipeEditView { view: view, state: state, cookbook_id: cookbookid, recipe_id: recipeid } ),
     };
     cx.render(rsx!(
@@ -61,339 +64,354 @@ fn NoSelectionView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<
     ))
 }
 
+fn get_cookbook<'a>(view: &'a UseState<View>, state: &'a std::rc::Rc<Vec<Cookbook>>, cookbook_id: CookbookId) -> Option<&'a Cookbook> {
+// fn get_cookbook<'a,'b>(view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId) -> Option<&'b Cookbook> {
+    let cookbook = state.get(cookbook_id);
+    if cookbook.is_none() {
+        // Cookbook not found, so set no selection.
+        // TODO: Log this and display error.
+        println!("Cookbook {} not found.", cookbook_id);
+
+        view.set(View::NoSelection);
+    }
+    cookbook
+}
+
+fn get_recipe<'a>(view: &'a UseState<View>, cookbook: &'a Cookbook, recipe_id: RecipeId) -> Option<&'a Recipe> {
+    let recipe = cookbook.recipes.get(&recipe_id);
+    if recipe.is_none() {
+        // Recipe not found, so set no selection.
+        // TODO: Log this and display error.
+        println!("Recipe {} not found.", recipe_id);
+
+        view.set(View::NoSelection);
+    }
+    recipe
+}
+
 #[inline_props]
 fn CookbookView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId) -> Element {
-    if let Some(cookbook) = state.current().get(*cookbook_id) {
-        let pills = cookbook.recipes.iter().map(|(recipe_id, recipe)| { rsx! (
-            RecipePill { view: view, cookbook_id: *cookbook_id, recipe_id: *recipe_id, recipe: recipe.clone() } // TODO: Can we avoid this clone?
-        )});
-        cx.render(rsx! (
-            Sidebar { view: view, state: state }
+    let current_state = state.current();
+    let cookbook = get_cookbook(view, &current_state, *cookbook_id)?;
+
+    let pills = cookbook.recipes.iter().map(|(recipe_id, recipe)| { rsx! (
+        RecipePill { view: view, cookbook_id: *cookbook_id, recipe_id: *recipe_id, recipe: recipe.clone() } // TODO: Can we avoid this clone?
+    )});
+    cx.render(rsx! (
+        Sidebar { view: view, state: state }
+        div {
+            class: "content",
             div {
-                class: "content",
-                div {
-                    class: "flex justify-center",
-                    h1 {
-                        class: "text-3xl font-bold mt-4 mb-6 text-center",
-                        "{cookbook.title}"
-                    }
+                class: "flex justify-center",
+                h1 {
+                    class: "text-3xl font-bold mt-4 mb-6 text-center",
+                    "{cookbook.title}"
                 }
+            }
+            div {
+                class: "flex flex-row flex-wrap",
+                pills
                 div {
-                    class: "flex flex-row flex-wrap",
-                    pills
+                    class: "basis-1/3",
                     div {
-                        class: "basis-1/3",
+                        class: "recipe-card",
+                        onclick: |_e| {view.set(View::CookbookRecipeNew(*cookbook_id))},
                         div {
-                            class: "recipe-card",
-                            onclick: |_e| {println!("TODO!")},
-                            div {
-                                class: "new-recipe",
-                                Icon {
-                                    class: "w-14 h-14",
-                                    icon: Shape::Plus,
-                                }
+                            class: "new-recipe",
+                            Icon {
+                                class: "w-14 h-14",
+                                icon: Shape::Plus,
                             }
-                            p {
-                                class: "p-5 text-center",
-                                "New Recipe"
-                            }
+                        }
+                        p {
+                            class: "p-5 text-center",
+                            "New Recipe"
                         }
                     }
                 }
             }
-        ))
-    } else {
-        // Cookbook not found, so set no selection.
-        // TODO: Log this.
-        println!("Cookbook {} not found.", cookbook_id);
-
-        view.set(View::NoSelection);
-        cx.render(rsx! (
-            ""
-        ))
-    }
+        }
+    ))
 }
 
 #[inline_props]
 fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId, recipe_id: RecipeId) -> Element {
-    if let Some(cookbook) = state.current().get(*cookbook_id) {
-        if let Some(recipe) = cookbook.recipes.get(recipe_id) {
-            cx.render(rsx! (
-                Sidebar { view: view, state: state }
+    let current_state = state.current();
+    let cookbook = get_cookbook(view, &current_state, *cookbook_id)?;
+    let recipe = get_recipe(view, &cookbook, *recipe_id)?;
+
+    cx.render(rsx! (
+        Sidebar { view: view, state: state }
+        div {
+            class: "content",
+            nav {
+                class: "flex w-full mt-4 mb-6",
                 div {
-                    class: "content",
-                    nav {
-                        class: "flex w-full mt-4 mb-6",
-                        div {
-                            class: "flex-1 flex justify-start mr-auto whitespace-nowrap",
-                            div {
-                                class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
-                                onclick: |_e| {view.set(View::Cookbook(*cookbook_id))},
-                                Icon {
-                                    class: "w-6 h-6",
-                                    icon: Shape::ChevronLeft,
-                                },
-                                span {
-                                    "{cookbook.title}"
-                                }
-                            }
-                        }
-                        div {
-                            class: "whitespace-nowrap",
-                            h1 {
-                                class: "text-3xl font-bold text-center",
-                                    "{recipe.title}"
-                            }
-                        }
-                        div {
-                            class: "flex-1 flex justify-end ml-auto whitespace-nowrap",
-                            div {
-                                class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
-                                onclick: |_e| {view.set(View::CookbookRecipeEdit(*cookbook_id, *recipe_id))},
-                                span {
-                                    "Edit"
-                                }
-                            }
-                        }
-                    }
-                    // div {
-                    //     class: "p-3",
-                    //     "TODO: Image carousel"
-                    // }
+                    class: "flex-1 flex justify-start mr-auto whitespace-nowrap",
                     div {
-                        class: "p-3",
-                        h2 {
-                            class: "text-xl font-bold",
-                            "Ingredients"
-                        }
-                        ul {
-                            class: "selectable",
-                            recipe.ingredients.iter().map(|ingredient| rsx! (
-                                li {
-                                    "{ingredient}"
-                                }
-                            ))
-                        }
-                    }
-                    div {
-                        class: "p-3",
-                        h2 {
-                            class: "text-xl font-bold",
-                            "Instructions"
-                        }
-                        Markdown {
-                            class: "instructions selectable",
-                            content: "{recipe.instructions}",
+                        class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
+                        onclick: |_e| {view.set(View::Cookbook(*cookbook_id))},
+                        Icon {
+                            class: "w-6 h-6",
+                            icon: Shape::ChevronLeft,
+                        },
+                        span {
+                            "{cookbook.title}"
                         }
                     }
                 }
-            ))
-        } else {
-            unimplemented!()
+                div {
+                    class: "whitespace-nowrap",
+                    h1 {
+                        class: "text-3xl font-bold text-center",
+                            "{recipe.title}"
+                    }
+                }
+                div {
+                    class: "flex-1 flex justify-end ml-auto whitespace-nowrap",
+                    div {
+                        class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
+                        onclick: |_e| {view.set(View::CookbookRecipeEdit(*cookbook_id, *recipe_id))},
+                        span {
+                            "Edit"
+                        }
+                    }
+                }
+            }
+            // div {
+            //     class: "p-3",
+            //     "TODO: Image carousel"
+            // }
+            div {
+                class: "p-3",
+                h2 {
+                    class: "text-xl font-bold",
+                    "Ingredients"
+                }
+                ul {
+                    class: "selectable",
+                    recipe.ingredients.iter().map(|ingredient| rsx! (
+                        li {
+                            "{ingredient}"
+                        }
+                    ))
+                }
+            }
+            div {
+                class: "p-3",
+                h2 {
+                    class: "text-xl font-bold",
+                    "Instructions"
+                }
+                Markdown {
+                    class: "instructions selectable",
+                    content: "{recipe.instructions}",
+                }
+            }
         }
-    } else {
-        unimplemented!()
-    }
+    ))
+}
+
+#[inline_props]
+fn CookbookRecipeNewView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId) -> Element {
+    let current_state = state.current();
+    let cookbook = get_cookbook(view, &current_state, *cookbook_id)?;
+    unimplemented!()
 }
 
 #[inline_props]
 fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId, recipe_id: RecipeId) -> Element {
     let cookbooks = state.current();
-    if let Some(cookbook) = cookbooks.get(*cookbook_id) {
-        if let Some(recipe) = cookbook.recipes.get(recipe_id) {
-            let old_recipe: Recipe = recipe.clone();
-            let old_cookbook: Cookbook = cookbook.clone();
+    let cookbook = get_cookbook(view, &cookbooks, *cookbook_id)?;
+    let recipe = get_recipe(view, &cookbook, *recipe_id)?;
 
-            // JP: I don't understand why this isn't saved across component reloads.
-            let name = use_state(&cx, || recipe.title.clone());
-            fn validate_name(name: &str) -> Result<(), &'static str> {
-                if name.len() == 0 {
-                    Err("Please enter a name.")
-                } else {
-                    Ok(())
-                }
-            }
+    let old_recipe: Recipe = recipe.clone();
+    let old_cookbook: Cookbook = cookbook.clone();
 
-            let ingredients = use_state(&cx, || recipe.ingredients.clone());
-            let new_ingredient: &UseState<String> = use_state(&cx, || "".into());
-            fn validate_ingredient(ingredient: &str) -> Result<(), &'static str> {
-                // if ingredient.len() == 0 {
-                //     Err("Please enter an ingredient.")
-                // } else {
-                    Ok(())
-                // }
-            }
-            let new_ingredient_err = validate_ingredient(new_ingredient.get());
-
-            let instructions = use_state(&cx, || recipe.instructions.clone());
-            fn validate_instructions(instructions: &str) -> Result<(), &'static str> {
-                if instructions.len() == 0 {
-                    Err("Please enter instructions.")
-                } else {
-                    Ok(())
-                }
-            }
-            let instructions_err = validate_instructions(instructions.get());
-
-            let save_handler = move |mut _e| {
-                // Validate all fields.
-                let new_name = name.get();
-                let new_ingredients = ingredients.get();
-                let new_instructions = instructions.get();
-                if validate_name(new_name).is_err()
-                || new_ingredients.iter().any(|i| validate_ingredient(i).is_err())
-                || validate_instructions(new_instructions).is_err() {
-                    return;
-                }
-
-                // Diff all fields.
-                let mut new_recipe = old_recipe.clone();
-                if old_recipe.title != *new_name {
-                    new_recipe.title = new_name.clone();
-                }
-                if old_recipe.ingredients != *new_ingredients {
-                    new_recipe.ingredients = new_ingredients.clone();
-                }
-                if old_recipe.instructions != *new_instructions {
-                    new_recipe.instructions = new_instructions.clone();
-                }
-
-                // Save updated fields.
-                // TODO: Send CRDT operations
-                let mut new_cookbook = old_cookbook.clone();
-                new_cookbook.recipes.insert(*recipe_id, new_recipe);
-                let mut new_cookbooks: Vec<Cookbook> = cookbooks.clone().to_vec();
-                new_cookbooks[*cookbook_id] = new_cookbook;
-                state.set(new_cookbooks);
-
-                view.set(View::CookbookRecipe(*cookbook_id, *recipe_id));
-            };
-
-            cx.render(rsx! (
-                Sidebar { view: view, state: state }
-                div {
-                    class: "content",
-                    nav {
-                        class: "flex w-full mt-4 mb-6",
-                        div {
-                            class: "flex-1 flex justify-start mr-auto whitespace-nowrap",
-                            div {
-                                class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
-                                onclick: |_e| {view.set(View::CookbookRecipe(*cookbook_id, *recipe_id))},
-                                Icon {
-                                    class: "w-6 h-6",
-                                    icon: Shape::ChevronLeft,
-                                },
-                                span {
-                                    "Cancel" // "{recipe.title}"
-                                }
-                            }
-                        }
-                        div {
-                            class: "whitespace-nowrap",
-                            h1 {
-                                class: "text-3xl font-bold text-center",
-                                    "Edit Recipe"
-                            }
-                        }
-                        div {
-                            class: "flex-1 flex justify-end ml-auto whitespace-nowrap",
-                            div {
-                                class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
-                                onclick: save_handler,
-                                span {
-                                    "Save"
-                                }
-                            }
-                        }
-                    }
-                    div {
-                        class: "w-full p-3",
-                        FieldLabel {
-                            label: "Name",
-                            id: "recipename",
-                            field: cx.render(rsx!( TextField {
-                                placeholder: "Recipe name",
-                                id: "recipename",
-                                value: name.get(),
-                                oninput: move |evt: Event<FormData>| name.set(evt.value.clone()),
-                                validation_fn: validate_name,
-                            }))
-                        }
-                        // div {
-                        //     class: "flex flex-col mb-4",
-                        //     "TODO: Images",
-                        // }
-                        FieldLabel {
-                            label: "Ingredients",
-                            id: "recipeingredients-0",
-                            field: cx.render(rsx!(
-                                ingredients.iter().enumerate().map(|(idx,ingredient)| {
-                                    cx.render(rsx!(
-                                        div {
-                                            class: "mb-1 w-full",
-                                            TextField {
-                                                placeholder: "Ingredient",
-                                                class: "w-full",
-                                                id: "recipeingredients-{idx}",
-                                                value: ingredient,
-                                                oninput: move |evt: Event<FormData>| ingredients.with_mut(|a| a[idx] = evt.value.clone()),
-                                                validation_fn: validate_ingredient,
-                                            }
-                                        }
-                                    ))
-                                })
-                                TextField {
-                                    placeholder: "Add ingredient...",
-                                    id: "recipeingredients-{ingredients.len()}",
-                                    value: new_ingredient.get(),
-                                    oninput: move |evt: Event<FormData>| new_ingredient.set(evt.value.clone()),
-                                    onkeyup: move |evt: Event<KeyboardData>| {
-                                        let i = new_ingredient.get();
-                                        if evt.key() == Key::Enter && validate_ingredient(i).is_ok() {
-                                            ingredients.with_mut(|a| a.push(i.clone()));
-                                            new_ingredient.set("".to_string());
-                                        }
-                                    }
-                                    validation_fn: validate_ingredient,
-                                }
-                            ))
-                        }
-                        div {
-                            class: "flex flex-col mb-4",
-                            label {
-                                class: "font-bold mb-2",
-                                r#for: "recipeinstructions",
-                                "Instructions"
-                            }
-                            textarea {
-                                class: format_args!("appearance-none border rounded py-1 px-2 {}", if instructions_err.is_err() {"border-red-500"} else {""}),
-                                r#id: "recipeinstructions",
-                                r#rows: 10,
-                                autocomplete: "false",
-                                "autocorrect": "false",
-                                autocapitalize: "false",
-                                spellcheck: "false",
-                                placeholder: "Instructions",
-                                oninput: move |evt| instructions.set(evt.value.clone()),
-                                value: "{instructions}"
-                            }
-                            instructions_err.err().map(|err| rsx!(
-                                p {
-                                    class: "text-red-500 text-sm",
-                                    "{err}"
-                                }
-                            ))
-                        }
-                    }
-                }
-            ))
+    // JP: I don't understand why this isn't saved across component reloads.
+    let name = use_state(&cx, || recipe.title.clone());
+    fn validate_name(name: &str) -> Result<(), &'static str> {
+        if name.len() == 0 {
+            Err("Please enter a name.")
         } else {
-            unimplemented!()
+            Ok(())
         }
-    } else {
-        unimplemented!()
     }
+
+    let ingredients = use_state(&cx, || recipe.ingredients.clone());
+    let new_ingredient: &UseState<String> = use_state(&cx, || "".into());
+    fn validate_ingredient(ingredient: &str) -> Result<(), &'static str> {
+        // if ingredient.len() == 0 {
+        //     Err("Please enter an ingredient.")
+        // } else {
+            Ok(())
+        // }
+    }
+    let new_ingredient_err = validate_ingredient(new_ingredient.get());
+
+    let instructions = use_state(&cx, || recipe.instructions.clone());
+    fn validate_instructions(instructions: &str) -> Result<(), &'static str> {
+        if instructions.len() == 0 {
+            Err("Please enter instructions.")
+        } else {
+            Ok(())
+        }
+    }
+    let instructions_err = validate_instructions(instructions.get());
+
+    let save_handler = move |mut _e| {
+        // Validate all fields.
+        let new_name = name.get();
+        let new_ingredients = ingredients.get();
+        let new_instructions = instructions.get();
+        if validate_name(new_name).is_err()
+        || new_ingredients.iter().any(|i| validate_ingredient(i).is_err())
+        || validate_instructions(new_instructions).is_err() {
+            return;
+        }
+
+        // Diff all fields.
+        let mut new_recipe = old_recipe.clone();
+        if old_recipe.title != *new_name {
+            new_recipe.title = new_name.clone();
+        }
+        if old_recipe.ingredients != *new_ingredients {
+            new_recipe.ingredients = new_ingredients.clone();
+        }
+        if old_recipe.instructions != *new_instructions {
+            new_recipe.instructions = new_instructions.clone();
+        }
+
+        // Save updated fields.
+        // TODO: Send CRDT operations
+        let mut new_cookbook = old_cookbook.clone();
+        new_cookbook.recipes.insert(*recipe_id, new_recipe);
+        let mut new_cookbooks: Vec<Cookbook> = cookbooks.clone().to_vec();
+        new_cookbooks[*cookbook_id] = new_cookbook;
+        state.set(new_cookbooks);
+
+        view.set(View::CookbookRecipe(*cookbook_id, *recipe_id));
+    };
+
+    cx.render(rsx! (
+        Sidebar { view: view, state: state }
+        div {
+            class: "content",
+            nav {
+                class: "flex w-full mt-4 mb-6",
+                div {
+                    class: "flex-1 flex justify-start mr-auto whitespace-nowrap",
+                    div {
+                        class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
+                        onclick: |_e| {view.set(View::CookbookRecipe(*cookbook_id, *recipe_id))},
+                        Icon {
+                            class: "w-6 h-6",
+                            icon: Shape::ChevronLeft,
+                        },
+                        span {
+                            "Cancel" // "{recipe.title}"
+                        }
+                    }
+                }
+                div {
+                    class: "whitespace-nowrap",
+                    h1 {
+                        class: "text-3xl font-bold text-center",
+                            "Edit Recipe"
+                    }
+                }
+                div {
+                    class: "flex-1 flex justify-end ml-auto whitespace-nowrap",
+                    div {
+                        class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
+                        onclick: save_handler,
+                        span {
+                            "Save"
+                        }
+                    }
+                }
+            }
+            div {
+                class: "w-full p-3",
+                FieldLabel {
+                    label: "Name",
+                    id: "recipename",
+                    field: cx.render(rsx!( TextField {
+                        placeholder: "Recipe name",
+                        id: "recipename",
+                        value: name.get(),
+                        oninput: move |evt: Event<FormData>| name.set(evt.value.clone()),
+                        validation_fn: validate_name,
+                    }))
+                }
+                // div {
+                //     class: "flex flex-col mb-4",
+                //     "TODO: Images",
+                // }
+                FieldLabel {
+                    label: "Ingredients",
+                    id: "recipeingredients-0",
+                    field: cx.render(rsx!(
+                        ingredients.iter().enumerate().map(|(idx,ingredient)| {
+                            cx.render(rsx!(
+                                div {
+                                    class: "mb-1 w-full",
+                                    TextField {
+                                        placeholder: "Ingredient",
+                                        class: "w-full",
+                                        id: "recipeingredients-{idx}",
+                                        value: ingredient,
+                                        oninput: move |evt: Event<FormData>| ingredients.with_mut(|a| a[idx] = evt.value.clone()),
+                                        validation_fn: validate_ingredient,
+                                    }
+                                }
+                            ))
+                        })
+                        TextField {
+                            placeholder: "Add ingredient...",
+                            id: "recipeingredients-{ingredients.len()}",
+                            value: new_ingredient.get(),
+                            oninput: move |evt: Event<FormData>| new_ingredient.set(evt.value.clone()),
+                            onkeyup: move |evt: Event<KeyboardData>| {
+                                let i = new_ingredient.get();
+                                if evt.key() == Key::Enter && validate_ingredient(i).is_ok() {
+                                    ingredients.with_mut(|a| a.push(i.clone()));
+                                    new_ingredient.set("".to_string());
+                                }
+                            }
+                            validation_fn: validate_ingredient,
+                        }
+                    ))
+                }
+                div {
+                    class: "flex flex-col mb-4",
+                    label {
+                        class: "font-bold mb-2",
+                        r#for: "recipeinstructions",
+                        "Instructions"
+                    }
+                    textarea {
+                        class: format_args!("appearance-none border rounded py-1 px-2 {}", if instructions_err.is_err() {"border-red-500"} else {""}),
+                        r#id: "recipeinstructions",
+                        r#rows: 10,
+                        autocomplete: "false",
+                        "autocorrect": "false",
+                        autocapitalize: "false",
+                        spellcheck: "false",
+                        placeholder: "Instructions",
+                        oninput: move |evt| instructions.set(evt.value.clone()),
+                        value: "{instructions}"
+                    }
+                    instructions_err.err().map(|err| rsx!(
+                        p {
+                            class: "text-red-500 text-sm",
+                            "{err}"
+                        }
+                    ))
+                }
+            }
+        }
+    ))
 }
 
 #[inline_props]
