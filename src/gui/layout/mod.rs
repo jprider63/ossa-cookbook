@@ -229,37 +229,6 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
     let old_recipe: Recipe = recipe.clone();
     let old_cookbook: Cookbook = cookbook.clone();
 
-    // JP: I don't understand why this isn't saved across component reloads.
-    // let name = use_state(&cx, || recipe.title.clone());
-    // fn validate_name(name: &str) -> Result<(), &'static str> {
-    //     if name.len() == 0 {
-    //         Err("Please enter a name.")
-    //     } else {
-    //         Ok(())
-    //     }
-    // }
-
-    // let ingredients = use_state(&cx, || recipe.ingredients.clone());
-    // let new_ingredient: &UseState<String> = use_state(&cx, || "".into());
-    // fn validate_ingredient(ingredient: &str) -> Result<(), &'static str> {
-    //     // if ingredient.len() == 0 {
-    //     //     Err("Please enter an ingredient.")
-    //     // } else {
-    //         Ok(())
-    //     // }
-    // }
-    // let new_ingredient_err = validate_ingredient(new_ingredient.get());
-
-    // let instructions = use_state(&cx, || recipe.instructions.clone());
-    // fn validate_instructions(instructions: &str) -> Result<(), &'static str> {
-    //     if instructions.len() == 0 {
-    //         Err("Please enter instructions.")
-    //     } else {
-    //         Ok(())
-    //     }
-    // }
-    // let instructions_err = validate_instructions(instructions.get());
-
     let (form, form_state) = recipe_form(cx, &old_recipe);
 
     let save_handler = move |mut _e| {

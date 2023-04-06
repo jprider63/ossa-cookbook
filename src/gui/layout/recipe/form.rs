@@ -51,7 +51,6 @@ pub fn recipe_form<'a, P>(cx: &'a Scoped<'a, P>, initial_recipe: &Recipe) -> (El
 
     let ingredients = use_state(&cx, || initial_recipe.ingredients.clone());
     let new_ingredient: &UseState<String> = use_state(&cx, || "".into());
-    // let new_ingredient_err = validate_ingredient(new_ingredient.get());
 
     let instructions = use_state(&cx, || initial_recipe.instructions.clone());
     let instructions_err = validate_instructions(instructions.get());
