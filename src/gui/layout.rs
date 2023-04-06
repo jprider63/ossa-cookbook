@@ -212,24 +212,16 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
     ))
 }
 
-#[inline_props]
-fn CookbookRecipeNewView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId) -> Element {
-    let current_state = state.current();
-    let cookbook = get_cookbook(view, &current_state, *cookbook_id)?;
-    unimplemented!()
+struct RecipeForm<'a> {
+    name: &'a UseState<String>,
+    ingredients: &'a UseState<Vec<String>>,
+    // TODO: new_ingredient?
+    instructions: &'a UseState<String>,
+    // TODO: new_instruction?
 }
 
-#[inline_props]
-fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId, recipe_id: RecipeId) -> Element {
-    let cookbooks = state.current();
-    let cookbook = get_cookbook(view, &cookbooks, *cookbook_id)?;
-    let recipe = get_recipe(view, &cookbook, *recipe_id)?;
-
-    let old_recipe: Recipe = recipe.clone();
-    let old_cookbook: Cookbook = cookbook.clone();
-
-    // JP: I don't understand why this isn't saved across component reloads.
-    let name = use_state(&cx, || recipe.title.clone());
+fn recipe_form<'a, P>(cx: &'a Scoped<'a, P>, initial_recipe: Recipe) -> (Element, RecipeForm<'a>) {
+    let name = use_state(&cx, || initial_recipe.title.clone());
     fn validate_name(name: &str) -> Result<(), &'static str> {
         if name.len() == 0 {
             Err("Please enter a name.")
@@ -238,7 +230,7 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
         }
     }
 
-    let ingredients = use_state(&cx, || recipe.ingredients.clone());
+    let ingredients = use_state(&cx, || initial_recipe.ingredients.clone());
     let new_ingredient: &UseState<String> = use_state(&cx, || "".into());
     fn validate_ingredient(ingredient: &str) -> Result<(), &'static str> {
         // if ingredient.len() == 0 {
@@ -247,9 +239,9 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
             Ok(())
         // }
     }
-    let new_ingredient_err = validate_ingredient(new_ingredient.get());
+    // let new_ingredient_err = validate_ingredient(new_ingredient.get());
 
-    let instructions = use_state(&cx, || recipe.instructions.clone());
+    let instructions = use_state(&cx, || initial_recipe.instructions.clone());
     fn validate_instructions(instructions: &str) -> Result<(), &'static str> {
         if instructions.len() == 0 {
             Err("Please enter instructions.")
@@ -259,78 +251,27 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
     }
     let instructions_err = validate_instructions(instructions.get());
 
-    let save_handler = move |mut _e| {
-        // Validate all fields.
-        let new_name = name.get();
-        let new_ingredients = ingredients.get();
-        let new_instructions = instructions.get();
-        if validate_name(new_name).is_err()
-        || new_ingredients.iter().any(|i| validate_ingredient(i).is_err())
-        || validate_instructions(new_instructions).is_err() {
-            return;
-        }
+    // let save_handler = move |mut _e| {
+    //     // Validate all fields.
+    //     let new_name = name.get();
+    //     let new_ingredients = ingredients.get();
+    //     let new_instructions = instructions.get();
+    //     if validate_name(new_name).is_err()
+    //     || new_ingredients.iter().any(|i| validate_ingredient(i).is_err())
+    //     || validate_instructions(new_instructions).is_err() {
+    //         return;
+    //     }
 
-        // Diff all fields.
-        let mut new_recipe = old_recipe.clone();
-        if old_recipe.title != *new_name {
-            new_recipe.title = new_name.clone();
-        }
-        if old_recipe.ingredients != *new_ingredients {
-            new_recipe.ingredients = new_ingredients.clone();
-        }
-        if old_recipe.instructions != *new_instructions {
-            new_recipe.instructions = new_instructions.clone();
-        }
+    //     unimplemented!{};
+    // };
 
-        // Save updated fields.
-        // TODO: Send CRDT operations
-        let mut new_cookbook = old_cookbook.clone();
-        new_cookbook.recipes.insert(*recipe_id, new_recipe);
-        let mut new_cookbooks: Vec<Cookbook> = cookbooks.clone().to_vec();
-        new_cookbooks[*cookbook_id] = new_cookbook;
-        state.set(new_cookbooks);
-
-        view.set(View::CookbookRecipe(*cookbook_id, *recipe_id));
+    let form_state = RecipeForm {
+        name: name,
+        ingredients: ingredients,
+        instructions: instructions,
     };
 
-    cx.render(rsx! (
-        Sidebar { view: view, state: state }
-        div {
-            class: "content",
-            nav {
-                class: "flex w-full mt-4 mb-6",
-                div {
-                    class: "flex-1 flex justify-start mr-auto whitespace-nowrap",
-                    div {
-                        class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
-                        onclick: |_e| {view.set(View::CookbookRecipe(*cookbook_id, *recipe_id))},
-                        Icon {
-                            class: "w-6 h-6",
-                            icon: Shape::ChevronLeft,
-                        },
-                        span {
-                            "Cancel" // "{recipe.title}"
-                        }
-                    }
-                }
-                div {
-                    class: "whitespace-nowrap",
-                    h1 {
-                        class: "text-3xl font-bold text-center",
-                            "Edit Recipe"
-                    }
-                }
-                div {
-                    class: "flex-1 flex justify-end ml-auto whitespace-nowrap",
-                    div {
-                        class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
-                        onclick: save_handler,
-                        span {
-                            "Save"
-                        }
-                    }
-                }
-            }
+    let view = cx.render(rsx! (
             div {
                 class: "w-full p-3",
                 FieldLabel {
@@ -410,6 +351,134 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
                     ))
                 }
             }
+    ));
+    (view, form_state)
+}
+
+#[inline_props]
+fn CookbookRecipeNewView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId) -> Element {
+    let current_state = state.current();
+    let cookbook = get_cookbook(view, &current_state, *cookbook_id)?;
+    unimplemented!()
+}
+
+#[inline_props]
+fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId, recipe_id: RecipeId) -> Element {
+    let cookbooks = state.current();
+    let cookbook = get_cookbook(view, &cookbooks, *cookbook_id)?;
+    let recipe = get_recipe(view, &cookbook, *recipe_id)?;
+
+    let old_recipe: Recipe = recipe.clone();
+    let old_cookbook: Cookbook = cookbook.clone();
+
+    // JP: I don't understand why this isn't saved across component reloads.
+    // let name = use_state(&cx, || recipe.title.clone());
+    // fn validate_name(name: &str) -> Result<(), &'static str> {
+    //     if name.len() == 0 {
+    //         Err("Please enter a name.")
+    //     } else {
+    //         Ok(())
+    //     }
+    // }
+
+    // let ingredients = use_state(&cx, || recipe.ingredients.clone());
+    // let new_ingredient: &UseState<String> = use_state(&cx, || "".into());
+    // fn validate_ingredient(ingredient: &str) -> Result<(), &'static str> {
+    //     // if ingredient.len() == 0 {
+    //     //     Err("Please enter an ingredient.")
+    //     // } else {
+    //         Ok(())
+    //     // }
+    // }
+    // let new_ingredient_err = validate_ingredient(new_ingredient.get());
+
+    // let instructions = use_state(&cx, || recipe.instructions.clone());
+    // fn validate_instructions(instructions: &str) -> Result<(), &'static str> {
+    //     if instructions.len() == 0 {
+    //         Err("Please enter instructions.")
+    //     } else {
+    //         Ok(())
+    //     }
+    // }
+    // let instructions_err = validate_instructions(instructions.get());
+
+    let (form, form_state) = recipe_form(cx, old_recipe);
+
+    let save_handler = move |mut _e| {
+        unimplemented!{};
+    };
+    //     // Validate all fields.
+    //     let new_name = name.get();
+    //     let new_ingredients = ingredients.get();
+    //     let new_instructions = instructions.get();
+    //     if validate_name(new_name).is_err()
+    //     || new_ingredients.iter().any(|i| validate_ingredient(i).is_err())
+    //     || validate_instructions(new_instructions).is_err() {
+    //         return;
+    //     }
+
+    //     // Diff all fields.
+    //     let mut new_recipe = old_recipe.clone();
+    //     if old_recipe.title != *new_name {
+    //         new_recipe.title = new_name.clone();
+    //     }
+    //     if old_recipe.ingredients != *new_ingredients {
+    //         new_recipe.ingredients = new_ingredients.clone();
+    //     }
+    //     if old_recipe.instructions != *new_instructions {
+    //         new_recipe.instructions = new_instructions.clone();
+    //     }
+
+    //     // Save updated fields.
+    //     // TODO: Send CRDT operations
+    //     let mut new_cookbook = old_cookbook.clone();
+    //     new_cookbook.recipes.insert(*recipe_id, new_recipe);
+    //     let mut new_cookbooks: Vec<Cookbook> = cookbooks.clone().to_vec();
+    //     new_cookbooks[*cookbook_id] = new_cookbook;
+    //     state.set(new_cookbooks);
+
+    //     view.set(View::CookbookRecipe(*cookbook_id, *recipe_id));
+    // };
+
+    cx.render(rsx! (
+        Sidebar { view: view, state: state }
+        div {
+            class: "content",
+            nav {
+                class: "flex w-full mt-4 mb-6",
+                div {
+                    class: "flex-1 flex justify-start mr-auto whitespace-nowrap",
+                    div {
+                        class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
+                        onclick: |_e| {view.set(View::CookbookRecipe(*cookbook_id, *recipe_id))},
+                        Icon {
+                            class: "w-6 h-6",
+                            icon: Shape::ChevronLeft,
+                        },
+                        span {
+                            "Cancel" // "{recipe.title}"
+                        }
+                    }
+                }
+                div {
+                    class: "whitespace-nowrap",
+                    h1 {
+                        class: "text-3xl font-bold text-center",
+                            "Edit Recipe"
+                    }
+                }
+                div {
+                    class: "flex-1 flex justify-end ml-auto whitespace-nowrap",
+                    div {
+                        class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
+                        onclick: save_handler,
+                        span {
+                            "Save"
+                        }
+                    }
+                }
+            }
+            form
         }
     ))
 }
