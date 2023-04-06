@@ -6,7 +6,7 @@ use dioxus::prelude::*;
 use dioxus_heroicons::{Icon, solid::Shape};
 // TODO: Fix outline icons.
 
-use crate::gui::layout::recipe::form::recipe_form;
+use crate::gui::layout::recipe::form::{recipe_form, valid_recipe_form};
 use crate::state::{Cookbook, CookbookId, RecipeId, Recipe};
 
 enum View {
@@ -260,43 +260,39 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
     // }
     // let instructions_err = validate_instructions(instructions.get());
 
-    let (form, form_state) = recipe_form(cx, old_recipe);
+    let (form, form_state) = recipe_form(cx, &old_recipe);
 
     let save_handler = move |mut _e| {
-        unimplemented!{};
+        // Validate all fields.
+        if !valid_recipe_form(&form_state) {
+            return;
+        }
+
+        // Diff all fields.
+        let mut new_recipe = old_recipe.clone();
+        let new_name = form_state.name.get();
+        let new_ingredients = form_state.ingredients.get();
+        let new_instructions = form_state.instructions.get();
+        if old_recipe.title != *new_name {
+            new_recipe.title = new_name.clone();
+        }
+        if old_recipe.ingredients != *new_ingredients {
+            new_recipe.ingredients = new_ingredients.clone();
+        }
+        if old_recipe.instructions != *new_instructions {
+            new_recipe.instructions = new_instructions.clone();
+        }
+
+        // Save updated fields.
+        // TODO: Send CRDT operations
+        let mut new_cookbook = old_cookbook.clone();
+        new_cookbook.recipes.insert(*recipe_id, new_recipe);
+        let mut new_cookbooks: Vec<Cookbook> = cookbooks.clone().to_vec();
+        new_cookbooks[*cookbook_id] = new_cookbook;
+        state.set(new_cookbooks);
+
+        view.set(View::CookbookRecipe(*cookbook_id, *recipe_id));
     };
-    //     // Validate all fields.
-    //     let new_name = name.get();
-    //     let new_ingredients = ingredients.get();
-    //     let new_instructions = instructions.get();
-    //     if validate_name(new_name).is_err()
-    //     || new_ingredients.iter().any(|i| validate_ingredient(i).is_err())
-    //     || validate_instructions(new_instructions).is_err() {
-    //         return;
-    //     }
-
-    //     // Diff all fields.
-    //     let mut new_recipe = old_recipe.clone();
-    //     if old_recipe.title != *new_name {
-    //         new_recipe.title = new_name.clone();
-    //     }
-    //     if old_recipe.ingredients != *new_ingredients {
-    //         new_recipe.ingredients = new_ingredients.clone();
-    //     }
-    //     if old_recipe.instructions != *new_instructions {
-    //         new_recipe.instructions = new_instructions.clone();
-    //     }
-
-    //     // Save updated fields.
-    //     // TODO: Send CRDT operations
-    //     let mut new_cookbook = old_cookbook.clone();
-    //     new_cookbook.recipes.insert(*recipe_id, new_recipe);
-    //     let mut new_cookbooks: Vec<Cookbook> = cookbooks.clone().to_vec();
-    //     new_cookbooks[*cookbook_id] = new_cookbook;
-    //     state.set(new_cookbooks);
-
-    //     view.set(View::CookbookRecipe(*cookbook_id, *recipe_id));
-    // };
 
     cx.render(rsx! (
         Sidebar { view: view, state: state }

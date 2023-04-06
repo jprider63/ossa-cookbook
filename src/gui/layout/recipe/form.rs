@@ -9,53 +9,52 @@ pub struct RecipeForm<'a> {
     pub ingredients: &'a UseState<Vec<String>>,
     // TODO: new_ingredient?
     pub instructions: &'a UseState<String>,
-    // TODO: new_instruction?
 }
 
-pub fn recipe_form<'a, P>(cx: &'a Scoped<'a, P>, initial_recipe: Recipe) -> (Element, RecipeForm<'a>) {
-    let name = use_state(&cx, || initial_recipe.title.clone());
-    fn validate_name(name: &str) -> Result<(), &'static str> {
-        if name.len() == 0 {
-            Err("Please enter a name.")
-        } else {
-            Ok(())
-        }
+pub fn valid_recipe_form(recipe_form: &RecipeForm) -> bool {
+    let new_name = recipe_form.name.get();
+    let new_ingredients = recipe_form.ingredients.get();
+    // TODO: new_ingredient?
+    let new_instructions = recipe_form.instructions.get();
+    let is_err = validate_name(new_name).is_err()
+              || new_ingredients.iter().any(|i| validate_ingredient(i).is_err())
+              || validate_instructions(new_instructions).is_err();
+    !is_err
+}
+
+pub fn validate_name(name: &str) -> Result<(), &'static str> {
+    if name.len() == 0 {
+        Err("Please enter a name.")
+    } else {
+        Ok(())
     }
+}
+
+pub fn validate_ingredient(ingredient: &str) -> Result<(), &'static str> {
+    // if ingredient.len() == 0 {
+    //     Err("Please enter an ingredient.")
+    // } else {
+        Ok(())
+    // }
+}
+
+pub fn validate_instructions(instructions: &str) -> Result<(), &'static str> {
+    if instructions.len() == 0 {
+        Err("Please enter instructions.")
+    } else {
+        Ok(())
+    }
+}
+
+pub fn recipe_form<'a, P>(cx: &'a Scoped<'a, P>, initial_recipe: &Recipe) -> (Element<'a>, RecipeForm<'a>) {
+    let name = use_state(&cx, || initial_recipe.title.clone());
 
     let ingredients = use_state(&cx, || initial_recipe.ingredients.clone());
     let new_ingredient: &UseState<String> = use_state(&cx, || "".into());
-    fn validate_ingredient(ingredient: &str) -> Result<(), &'static str> {
-        // if ingredient.len() == 0 {
-        //     Err("Please enter an ingredient.")
-        // } else {
-            Ok(())
-        // }
-    }
     // let new_ingredient_err = validate_ingredient(new_ingredient.get());
 
     let instructions = use_state(&cx, || initial_recipe.instructions.clone());
-    fn validate_instructions(instructions: &str) -> Result<(), &'static str> {
-        if instructions.len() == 0 {
-            Err("Please enter instructions.")
-        } else {
-            Ok(())
-        }
-    }
     let instructions_err = validate_instructions(instructions.get());
-
-    // let save_handler = move |mut _e| {
-    //     // Validate all fields.
-    //     let new_name = name.get();
-    //     let new_ingredients = ingredients.get();
-    //     let new_instructions = instructions.get();
-    //     if validate_name(new_name).is_err()
-    //     || new_ingredients.iter().any(|i| validate_ingredient(i).is_err())
-    //     || validate_instructions(new_instructions).is_err() {
-    //         return;
-    //     }
-
-    //     unimplemented!{};
-    // };
 
     let form_state = RecipeForm {
         name: name,
