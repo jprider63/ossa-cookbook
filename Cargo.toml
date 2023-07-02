@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 dioxus = {version = "0.3.1"}
 dioxus-desktop = "0.3.0"
-dioxus-heroicons = {path = "/Users/james/Documents/Projects/dioxus-heroicons/"}
-dioxus_markdown = {path = "/Users/james/Documents/Projects/dioxus-markdown/"}
+dioxus-heroicons = {git = "https://github.com/jprider63/dioxus-heroicons.git", commit="33e9dbc89e174daf315ddcb867d4ec74a4c1e362"}
+dioxus_markdown = {git = "https://github.com/jprider63/dioxus-markdown.git", commit="73fa25e58e9331ed948b16fb5d80d01a2aa1d0e4"}
 keyboard-types = "*"
 im = "15.1.0"
