@@ -12,3 +12,9 @@ dioxus-heroicons = {git = "https://github.com/jprider63/dioxus-heroicons.git", c
 dioxus_markdown = {git = "https://github.com/jprider63/dioxus-markdown.git", commit="73fa25e58e9331ed948b16fb5d80d01a2aa1d0e4"}
 keyboard-types = "*"
 im = "15.1.0"
+odyssey-core = {path = "/Users/james/Documents/Projects/odyssey/odyssey-core"}
+clap = { version = "4.3.10", features = ["derive"] }
+
+# tmp?
+tokio = {version="*", features=["rt","rt-multi-thread","net"]}
+tokio-util = {version="*", features=["codec"]}

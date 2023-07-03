@@ -1,9 +1,14 @@
+use clap::Parser;
 use dioxus::prelude::*;
 use dioxus_desktop::tao::menu::{AboutMetadata, MenuBar, MenuItem, MenuItemAttributes};
+use odyssey_core::network::p2p::{P2PManager, P2PSettings};
+use odyssey_core::util::Sha256Hash;
 use std::collections::BTreeMap;
+use std::net::{Ipv4Addr, SocketAddrV4};
 
 use crate::state::*;
 
+mod cli;
 mod gui;
 mod state;
 
@@ -51,6 +56,14 @@ impl WindowExt for Window {
 const app_name: &str = "Odyssey Cookbook";
 
 fn main() {
+    let args = cli::Arguments::parse();
+
+    if let Some(port) = args.port {
+        let odyssey_manager = P2PManager::initialize::<Sha256Hash>(P2PSettings {address: SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), port)});
+    } else {
+        cli::run_client();
+    }
+
     let mut about_menu = MenuBar::new();
     about_menu.add_native_item(MenuItem::About(app_name.into(), AboutMetadata::default()));
     about_menu.add_native_item(MenuItem::Separator);
