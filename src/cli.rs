@@ -23,7 +23,7 @@ pub(crate) fn run_client() {
             store_id: Sha256Hash([0;32]),
             body_request: None,
         };
-        let response = run_store_metadata_client::<Sha256Hash,Sha256Hash>(&mut stream, &req).await.unwrap();
+        let response = run_store_metadata_client::<Sha256Hash,Sha256Hash, codec::Framed<TcpStream, LengthDelimitedCodec>>(&mut stream, &req).await.unwrap();
 
         println!("Recieved: {:?}", response);
     })
