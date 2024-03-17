@@ -59,7 +59,7 @@ fn main() {
     let args = cli::Arguments::parse();
 
     if let Some(port) = args.port {
-        let odyssey_manager = P2PManager::initialize::<Sha256Hash>(P2PSettings {address: SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), port)});
+        let odyssey_manager = P2PManager::initialize::<Sha256Hash,Sha256Hash>(P2PSettings {address: SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), port)});
     } else {
         cli::run_client();
     }
