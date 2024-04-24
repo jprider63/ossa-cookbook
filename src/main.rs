@@ -1,8 +1,14 @@
 use clap::Parser;
 use dioxus::prelude::*;
 use dioxus_desktop::tao::menu::{AboutMetadata, MenuBar, MenuItem, MenuItemAttributes};
+use odyssey_core::{Odyssey, OdysseyConfig};
 use odyssey_core::network::p2p::{P2PManager, P2PSettings};
+use odyssey_core::storage::memory::MemoryStorage;
 use odyssey_core::util::Sha256Hash;
+use odyssey_crdt::{
+    register::LWW,
+    time::LamportTimestamp,
+};
 use std::collections::BTreeMap;
 use std::net::{Ipv4Addr, SocketAddrV4};
 
@@ -58,11 +64,29 @@ const app_name: &str = "Odyssey Cookbook";
 fn main() {
     let args = cli::Arguments::parse();
 
-    if let Some(port) = args.port {
-        let odyssey_manager = P2PManager::initialize::<Sha256Hash,Sha256Hash>(P2PSettings {address: SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), port)});
-    } else {
-        cli::run_client();
-    }
+    let port = args.port.unwrap_or(8080);
+    let odyssey_config = OdysseyConfig {
+        // address: SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), port),
+        // TODO: IPV4 and/or IPV6
+        port,
+    };
+    // let odyssey: Odyssey<Sha256Hash> = Odyssey::start(odyssey_config);
+
+    // if args.port.is_some() {
+    //     // TODO: join_store()
+    // } else {
+    //     let init_st = initial_demo_state();
+    //     let recipe_store = odyssey.create_store(init_st, MemoryStorage::new()); // TODO: Owner, initial state
+    //     // JP: We also want a load_store()?
+    // }
+
+
+
+    // if let Some(port) = args.port {
+    //     let odyssey_manager = P2PManager::initialize::<Sha256Hash,Sha256Hash>(P2PSettings {address: SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), port)});
+    // } else {
+    //     cli::run_client();
+    // }
 
     let mut about_menu = MenuBar::new();
     about_menu.add_native_item(MenuItem::About(app_name.into(), AboutMetadata::default()));
@@ -114,28 +138,32 @@ fn main() {
     dioxus_desktop::launch_cfg(app, c);
 }
 
+fn initial_demo_state() -> Vec<Cookbook> {
+    let user_id = 0; // TODO
+    let recipe = Recipe {
+        title: LWW::new(LamportTimestamp::current(user_id), "Kalbi".into()),
+        ingredients: vec!["1oz Soy sauce".into(), "1lb Beef Ribs".into()],
+        instructions: "1. Grill meat\n2. Eat\n3. ...".into(),
+        image: vec![],
+    };
+    let recipes = BTreeMap::from([
+                                  (0, recipe.clone()),
+                                  (1, recipe.clone()),
+                                  (2, recipe.clone()),
+                                  (3, recipe.clone()),
+                                  (4, recipe.clone()),
+                                  (5, recipe.clone()),
+                                  (6, recipe.clone()),
+    ]);
+    let book1 = Cookbook {title: "Family Recipes".into(), recipes: recipes.clone()};
+    let book2 = Cookbook {title: "My Recipes".into(), recipes: recipes};
+    vec![book1, book2]
+    // TODO: Should be a Map CRDT. Include other store metadata like sharing/permissions, peers, etc
+}
 
 fn app(cx: Scope) -> Element {
     let state = use_state(&cx, || {
-        let recipe = Recipe {
-            title: "Kalbi".into(),
-            ingredients: vec!["1oz Soy sauce".into(), "1lb Beef Ribs".into()],
-            instructions: "1. Grill meat\n2. Eat\n3. ...".into(),
-            image: vec![],
-        };
-        let recipes = BTreeMap::from([
-                                      (0, recipe.clone()),
-                                      (1, recipe.clone()),
-                                      (2, recipe.clone()),
-                                      (3, recipe.clone()),
-                                      (4, recipe.clone()),
-                                      (5, recipe.clone()),
-                                      (6, recipe.clone()),
-        ]);
-        let book1 = Cookbook {title: "Family Recipes".into(), recipes: recipes.clone()};
-        let book2 = Cookbook {title: "My Recipes".into(), recipes: recipes};
-        vec![book1, book2]
-        // TODO: Should be a Map CRDT. Include other store metadata like sharing/permissions, peers, etc
+        initial_demo_state()
     });
 
     cx.render(rsx! (

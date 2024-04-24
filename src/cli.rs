@@ -16,6 +16,7 @@ use odyssey_core::util::Sha256Hash;
 use tokio::net::TcpStream;
 use tokio_util::codec::{self, LengthDelimitedCodec};
 pub(crate) fn run_client() {
+    // TODO: DELETE ME XXX
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         let tcpstream = TcpStream::connect("127.0.0.1:9999").await.expect("Failed to connect to server");
         let stream = codec::Framed::new(tcpstream, LengthDelimitedCodec::new());

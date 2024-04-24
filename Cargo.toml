@@ -13,6 +13,7 @@ dioxus_markdown = {git = "https://github.com/jprider63/dioxus-markdown.git", com
 keyboard-types = "*"
 im = "15.1.0"
 odyssey-core = {path = "/Users/james/Documents/Projects/odyssey/odyssey-core"}
+odyssey-crdt = {path = "/Users/james/Documents/Projects/odyssey/odyssey-crdt"}
 clap = { version = "4.3.10", features = ["derive"] }
 
 # tmp?

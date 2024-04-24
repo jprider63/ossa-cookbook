@@ -165,7 +165,7 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
                     class: "whitespace-nowrap",
                     h1 {
                         class: "text-3xl font-bold text-center",
-                            "{recipe.title}"
+                            "{recipe.title.value()}"
                     }
                 }
                 div {
@@ -237,28 +237,44 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
             return;
         }
 
+        // let mut pending_ops = cookbook.create_batch_operations();
+
         // Diff all fields.
         let mut new_recipe = old_recipe.clone();
         let new_name = form_state.name.get();
         let new_ingredients = form_state.ingredients.get();
         let new_instructions = form_state.instructions.get();
-        if old_recipe.title != *new_name {
-            new_recipe.title = new_name.clone();
+        if old_recipe.title.value() != new_name {
+            // new_recipe.title = new_name.clone();
+
+            todo!();
+            // let op = TwoPMapOp::Apply {
+            //     key: recipe_id,
+            //     operation: RecipeOp::TitleOp {
+            //         time: pending_ops.time(),
+            //         value: new_name,
+            //     },
+            // };
+            // let _id = pending_ops.append(op); // Take a closure that gives you the current "time"?
         }
         if old_recipe.ingredients != *new_ingredients {
-            new_recipe.ingredients = new_ingredients.clone();
+            // new_recipe.ingredients = new_ingredients.clone();
+            todo!();
         }
         if old_recipe.instructions != *new_instructions {
-            new_recipe.instructions = new_instructions.clone();
+            // new_recipe.instructions = new_instructions.clone();
+            todo!();
         }
 
-        // Save updated fields.
+        // // Save updated fields by applying CRDT operations.
+        // cookbook.apply_batch_operations(pending_ops);
+
         // TODO: Send CRDT operations
-        let mut new_cookbook = old_cookbook.clone();
-        new_cookbook.recipes.insert(*recipe_id, new_recipe);
-        let mut new_cookbooks: Vec<Cookbook> = cookbooks.clone().to_vec();
-        new_cookbooks[*cookbook_id] = new_cookbook;
-        state.set(new_cookbooks);
+        // let mut new_cookbook = old_cookbook.clone();
+        // new_cookbook.recipes.insert(*recipe_id, new_recipe);
+        // let mut new_cookbooks: Vec<Cookbook> = cookbooks.clone().to_vec();
+        // new_cookbooks[*cookbook_id] = new_cookbook;
+        // state.set(new_cookbooks);
 
         view.set(View::CookbookRecipe(*cookbook_id, *recipe_id));
     };
@@ -321,7 +337,7 @@ fn RecipePill<'a>(cx: Scope, view: &'a UseState<View>, cookbook_id: CookbookId, 
                     class: "border-t",
                     p {
                         class: "p-5 text-center",
-                        "{recipe.title}"
+                        "{recipe.title.value()}"
                     }
                 }
             }

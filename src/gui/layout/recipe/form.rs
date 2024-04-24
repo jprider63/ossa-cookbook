@@ -47,7 +47,7 @@ pub fn validate_instructions(instructions: &str) -> Result<(), &'static str> {
 }
 
 pub fn recipe_form<'a, P>(cx: &'a Scoped<'a, P>, initial_recipe: &Recipe) -> (Element<'a>, RecipeForm<'a>) {
-    let name = use_state(&cx, || initial_recipe.title.clone());
+    let name = use_state(&cx, || initial_recipe.title.value().clone());
 
     let ingredients = use_state(&cx, || initial_recipe.ingredients.clone());
     let new_ingredient: &UseState<String> = use_state(&cx, || "".into());
