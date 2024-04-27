@@ -139,11 +139,15 @@ fn main() {
 }
 
 fn initial_demo_state() -> Vec<Cookbook> {
-    let user_id = 0; // TODO
+    fn lww<A>(x: A) -> LWW<Time, A> {
+        let user_id = 0; // TODO
+        LWW::new(LamportTimestamp::current(user_id), x)
+    }
+
     let recipe = Recipe {
-        title: LWW::new(LamportTimestamp::current(user_id), "Kalbi".into()),
-        ingredients: vec!["1oz Soy sauce".into(), "1lb Beef Ribs".into()],
-        instructions: "1. Grill meat\n2. Eat\n3. ...".into(),
+        title: lww("Kalbi".into()),
+        ingredients: lww(vec!["1oz Soy sauce".into(), "1lb Beef Ribs".into()]),
+        instructions: lww("1. Grill meat\n2. Eat\n3. ...".into()),
         image: vec![],
     };
     let recipes = BTreeMap::from([

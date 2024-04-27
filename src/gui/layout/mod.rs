@@ -191,7 +191,7 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
                 }
                 ul {
                     class: "selectable",
-                    recipe.ingredients.iter().map(|ingredient| rsx! (
+                    recipe.ingredients.value().iter().map(|ingredient| rsx! (
                         li {
                             "{ingredient}"
                         }
@@ -206,7 +206,7 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
                 }
                 Markdown {
                     class: "instructions selectable",
-                    content: "{recipe.instructions}",
+                    content: "{recipe.instructions.value()}",
                 }
             }
         }
@@ -257,11 +257,11 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
             // };
             // let _id = pending_ops.append(op); // Take a closure that gives you the current "time"?
         }
-        if old_recipe.ingredients != *new_ingredients {
+        if old_recipe.ingredients.value() != new_ingredients {
             // new_recipe.ingredients = new_ingredients.clone();
             todo!();
         }
-        if old_recipe.instructions != *new_instructions {
+        if old_recipe.instructions.value() != new_instructions {
             // new_recipe.instructions = new_instructions.clone();
             todo!();
         }

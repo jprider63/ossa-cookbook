@@ -13,14 +13,14 @@ pub type RGA<A> = A;
 pub type OdysseyRef<A> = A;
 pub type Image = ();
 
-type UserId = u32;
-type Time = LamportTimestamp<UserId>; // TODO: Switch to hashes for logical time. XXX
+pub type UserId = u32;
+pub type Time = LamportTimestamp<UserId>; // TODO: Switch to hashes for logical time. XXX
 pub type RecipeId = usize;
 #[derive(Clone)]
 pub struct Recipe {
     pub title: LWW<Time, String>,
-    pub ingredients: Sequence<String>,
-    pub instructions: RGA<String>,
+    pub ingredients: LWW<Time, Vec<String>>, // Sequence<String>,
+    pub instructions: LWW<Time, String>, // RGA<String>,
     pub image: Sequence<OdysseyRef<Image>>,
 }
 

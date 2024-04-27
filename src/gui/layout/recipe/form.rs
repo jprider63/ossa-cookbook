@@ -49,16 +49,16 @@ pub fn validate_instructions(instructions: &str) -> Result<(), &'static str> {
 pub fn recipe_form<'a, P>(cx: &'a Scoped<'a, P>, initial_recipe: &Recipe) -> (Element<'a>, RecipeForm<'a>) {
     let name = use_state(&cx, || initial_recipe.title.value().clone());
 
-    let ingredients = use_state(&cx, || initial_recipe.ingredients.clone());
+    let ingredients = use_state(&cx, || initial_recipe.ingredients.value().clone());
     let new_ingredient: &UseState<String> = use_state(&cx, || "".into());
 
-    let instructions = use_state(&cx, || initial_recipe.instructions.clone());
+    let instructions = use_state(&cx, || initial_recipe.instructions.value().clone());
     let instructions_err = validate_instructions(instructions.get());
 
     let form_state = RecipeForm {
-        name: name,
-        ingredients: ingredients,
-        instructions: instructions,
+        name,
+        ingredients,
+        instructions,
     };
 
     let view = cx.render(rsx! (
