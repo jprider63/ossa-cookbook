@@ -7,7 +7,7 @@ use dioxus_heroicons::{Icon, solid::Shape};
 // TODO: Fix outline icons.
 
 use crate::gui::layout::recipe::form::{recipe_form, valid_recipe_form};
-use crate::state::{Cookbook, CookbookId, RecipeId, Recipe};
+use crate::state::{Cookbook, CookbookId, RecipeId, Recipe, RecipeOp};
 
 enum View {
     Login,
@@ -237,7 +237,7 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
             return;
         }
 
-        // let mut pending_ops = cookbook.create_batch_operations();
+        let mut ops = Vec::new(); // cookbook.create_batch_operations();
 
         // Diff all fields.
         let mut new_recipe = old_recipe.clone();
@@ -247,7 +247,7 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
         if old_recipe.title.value() != new_name {
             // new_recipe.title = new_name.clone();
 
-            todo!();
+            ops.push(RecipeOp::Title(new_name.clone()));
             // let op = TwoPMapOp::Apply {
             //     key: recipe_id,
             //     operation: RecipeOp::TitleOp {
@@ -259,11 +259,11 @@ fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a Us
         }
         if old_recipe.ingredients.value() != new_ingredients {
             // new_recipe.ingredients = new_ingredients.clone();
-            todo!();
+            ops.push(RecipeOp::Ingredients(new_ingredients.clone()));
         }
         if old_recipe.instructions.value() != new_instructions {
             // new_recipe.instructions = new_instructions.clone();
-            todo!();
+            ops.push(RecipeOp::Instructions(new_instructions.clone()));
         }
 
         // // Save updated fields by applying CRDT operations.
