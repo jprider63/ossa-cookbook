@@ -1,13 +1,16 @@
 use clap::Parser;
 use dioxus::prelude::*;
 use dioxus_desktop::tao::menu::{AboutMetadata, MenuBar, MenuItem, MenuItemAttributes};
-use odyssey_core::{Odyssey, OdysseyConfig};
+use odyssey_core::{Odyssey, OdysseyConfig, core::OdysseyType};
 use odyssey_core::network::p2p::{P2PManager, P2PSettings};
 use odyssey_core::storage::memory::MemoryStorage;
+use odyssey_core::store::ecg::v0::TestHeader;
 use odyssey_core::util::Sha256Hash;
 use odyssey_crdt::{
+    map::twopmap::TwoPMap,
     register::LWW,
     time::LamportTimestamp,
+    CRDT,
 };
 use std::collections::BTreeMap;
 use std::net::{Ipv4Addr, SocketAddrV4};
@@ -70,7 +73,11 @@ fn main() {
         // TODO: IPV4 and/or IPV6
         port,
     };
-    // let odyssey: Odyssey<Sha256Hash> = Odyssey::start(odyssey_config);
+    // // TODO: switch to this API XXX
+    // let odyssey: Odyssey<Sha256Hash> = Odyssey::new(odyssey_config);
+    // odyssey.go_online(); // start_network(); // Starts server, connects to DHT, connect to known peers, etc
+    // // odyssey.go_offline(); // stop_network();
+    let odyssey: Odyssey<CookbookApplication> = Odyssey::start(odyssey_config);
 
     // if args.port.is_some() {
     //     // TODO: join_store()
@@ -80,6 +87,8 @@ fn main() {
     //     // JP: We also want a load_store()?
     // }
 
+    // let init_st = initial_demo_state();
+    // let recipe_store = odyssey.create_store(init_st, MemoryStorage::new());
 
 
     // if let Some(port) = args.port {
@@ -135,13 +144,20 @@ fn main() {
     let w = dioxus_desktop::WindowBuilder::new().with_title(app_name)
                                                 .with_menu(menu);
     let c = dioxus_desktop::Config::new().with_window(w);
-    dioxus_desktop::launch_cfg(app, c);
+    let odyssey_prop = OdysseyProp {
+        odyssey,
+    };
+    dioxus_desktop::launch_with_props(app, odyssey_prop, c);
 }
 
 fn initial_demo_state() -> Vec<Cookbook> {
-    fn lww<A>(x: A) -> LWW<Time, A> {
+    fn lt() -> LamportTimestamp<UserId> {
         let user_id = 0; // TODO
-        LWW::new(LamportTimestamp::current(user_id), x)
+        LamportTimestamp::current(user_id)
+    }
+
+    fn lww<A>(x: A) -> LWW<Time, A> {
+        LWW::new(lt(), x)
     }
 
     let recipe = Recipe {
@@ -150,25 +166,36 @@ fn initial_demo_state() -> Vec<Cookbook> {
         instructions: lww("1. Grill meat\n2. Eat\n3. ...".into()),
         image: vec![],
     };
-    let recipes = BTreeMap::from([
-                                  (0, recipe.clone()),
-                                  (1, recipe.clone()),
-                                  (2, recipe.clone()),
-                                  (3, recipe.clone()),
-                                  (4, recipe.clone()),
-                                  (5, recipe.clone()),
-                                  (6, recipe.clone()),
-    ]);
-    let book1 = Cookbook {title: "Family Recipes".into(), recipes: recipes.clone()};
-    let book2 = Cookbook {title: "My Recipes".into(), recipes: recipes};
+    let recipes = TwoPMap::new();
+    let recipes = recipes.apply(lt(), TwoPMap::insert(recipe.clone()));
+    let recipes = recipes.apply(lt(), TwoPMap::insert(recipe.clone()));
+    let recipes = recipes.apply(lt(), TwoPMap::insert(recipe.clone()));
+    let recipes = recipes.apply(lt(), TwoPMap::insert(recipe.clone()));
+    let recipes = recipes.apply(lt(), TwoPMap::insert(recipe.clone()));
+    // let recipes = BTreeMap::from([
+    //                               (0, recipe.clone()),
+    //                               (1, recipe.clone()),
+    //                               (2, recipe.clone()),
+    //                               (3, recipe.clone()),
+    //                               (4, recipe.clone()),
+    //                               (5, recipe.clone()),
+    //                               (6, recipe.clone()),
+    // ]);
+    let book1 = Cookbook {title: lww("Family Recipes".into()), recipes: recipes.clone()};
+    let book2 = Cookbook {title: lww("My Recipes".into()), recipes: recipes};
     vec![book1, book2]
     // TODO: Should be a Map CRDT. Include other store metadata like sharing/permissions, peers, etc
 }
 
-fn app(cx: Scope) -> Element {
+// #[inline_props]
+fn app(cx: Scope<OdysseyProp<CookbookApplication>>) -> Element {
     let state = use_state(&cx, || {
         initial_demo_state()
     });
+    let odyssey = &cx.props.odyssey;
+
+    let init_st = initial_demo_state();
+    let recipe_store = odyssey.create_store(init_st, MemoryStorage::new());
 
     cx.render(rsx! (
         style { [rsx!{include_str!("../dist/style.css")}].into_iter() }
@@ -177,5 +204,17 @@ fn app(cx: Scope) -> Element {
             gui::layout::layout { state: state }
         )
     ))
+}
+
+#[derive(Props)]
+struct OdysseyProp<A> {
+    odyssey: Odyssey<A>,
+}
+
+enum CookbookApplication {}
+
+impl OdysseyType for CookbookApplication {
+    type StoreId = (); // TODO
+    type ECGHeader = TestHeader; // TODO
 }
 

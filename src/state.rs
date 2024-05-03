@@ -1,7 +1,8 @@
 
 use odyssey_crdt::{
     CRDT,
-    register::LWW
+    register::LWW,
+    map::twopmap::TwoPMap,
 };
 use odyssey_crdt::time::LamportTimestamp;
 
@@ -18,7 +19,8 @@ pub type Image = ();
 
 pub type UserId = u32;
 pub type Time = LamportTimestamp<UserId>; // TODO: Switch to hashes for logical time. XXX
-pub type RecipeId = usize;
+// pub struct RecipeId(Time); // JP: How do we get this newtype wrapper to work? `Into` instance?
+pub type RecipeId = Time;
 #[derive(Clone)]
 pub struct Recipe {
     pub title: LWW<Time, String>,
@@ -33,10 +35,32 @@ pub enum RecipeOp {
     Instructions(<LWW<Time, String> as CRDT>::Op),
 }
 
+impl CRDT for Recipe {
+    type Op = RecipeOp;
+    type Time = Time;
+
+    fn apply(self, op_time: Time, op: Self::Op) -> Self {
+        todo!()
+    }
+}
+
 pub type CookbookId = usize;
 #[derive(Clone)]
 pub struct Cookbook {
-    pub title: String, // TODO: LWW<String>, XXX
-    pub recipes: OrderedMap<RecipeId, Recipe>,
+    pub title: LWW<Time, String>,
+    pub recipes: TwoPMap<RecipeId, Recipe>,
 }
 
+pub enum CookbookOp {
+    Title(<LWW<Time, String> as CRDT>::Op),
+    Recipes(<TwoPMap<RecipeId, Recipe> as CRDT>::Op),
+}
+
+impl CRDT for Cookbook {
+    type Op = CookbookOp;
+    type Time = Time;
+
+    fn apply(self, op_time: Time, op: Self::Op) -> Self {
+        todo!()
+    }
+}
