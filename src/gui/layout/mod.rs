@@ -9,6 +9,8 @@ use dioxus_heroicons::{Icon, solid::Shape};
 use crate::gui::layout::recipe::form::{recipe_form, valid_recipe_form};
 use crate::state::{Cookbook, CookbookId, RecipeId, Recipe, RecipeOp};
 
+use crate::{CookbookApplication, UseStore};
+
 enum View {
     Login,
     NoSelection,
@@ -30,19 +32,21 @@ fn is_cookbook_selected(view: &View, cid: CookbookId) -> bool {
 }
 
 #[inline_props]
-pub fn layout<'a>(cx: Scope, state: &'a UseState<Vec<Cookbook>>) -> Element {
+// pub fn layout(cx: Scope, state: Vec<UseStore<CookbookApplication, Cookbook>>) -> Element {
+pub fn layout<'a>(cx: Scope, state: &'a UseState<Vec<UseStore<CookbookApplication, Cookbook>>>) -> Element {
     let view = use_state(&cx, || {
         View::NoSelection
     });
 
     let v = view.current();
     let r = match &*v {
-        View::Login => todo!(),
-        View::NoSelection => rsx! ( NoSelectionView { view: view, state: state } ),
-        View::Cookbook(cookbookid) => rsx! ( CookbookView { view: view, state: state, cookbook_id: *cookbookid } ),
+        // View::Login => todo!(),
+        // View::NoSelection => rsx! ( NoSelectionView { view: view, state: state } ),
+        // View::Cookbook(cookbookid) => rsx! ( CookbookView { view: view, state: state, cookbook_id: *cookbookid } ),
         View::CookbookRecipe(cookbookid, recipeid) => rsx! ( CookbookRecipeView { view: view, state: state, cookbook_id: *cookbookid, recipe_id: recipeid.clone() } ),
-        View::CookbookRecipeNew(cookbookid) => rsx! ( CookbookRecipeNewView { view: view, state: state, cookbook_id: *cookbookid } ),
-        View::CookbookRecipeEdit(cookbookid, recipeid) => rsx! ( CookbookRecipeEditView { view: view, state: state, cookbook_id: *cookbookid, recipe_id: recipeid.clone() } ),
+        // View::CookbookRecipeNew(cookbookid) => rsx! ( CookbookRecipeNewView { view: view, state: state, cookbook_id: *cookbookid } ),
+        // View::CookbookRecipeEdit(cookbookid, recipeid) => rsx! ( CookbookRecipeEditView { view: view, state: state, cookbook_id: *cookbookid, recipe_id: recipeid.clone() } ),
+        _ => todo!(),
     };
     cx.render(rsx!(
         div {
@@ -52,22 +56,21 @@ pub fn layout<'a>(cx: Scope, state: &'a UseState<Vec<Cookbook>>) -> Element {
     ))
 }
 
-#[inline_props]
-fn NoSelectionView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>) -> Element {
-    cx.render(rsx! (
-        Sidebar { view: view, state: state }
-        div {
-            class: "content",
-            div {
-                class: "flex justify-center items-center h-screen",
-                "No selection" // No selection. | New cookbook | | New meal planner |
-            }
-        }
-    ))
-}
+// #[inline_props]
+// fn NoSelectionView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>) -> Element {
+//     cx.render(rsx! (
+//         Sidebar { view: view, state: state }
+//         div {
+//             class: "content",
+//             div {
+//                 class: "flex justify-center items-center h-screen",
+//                 "No selection" // No selection. | New cookbook | | New meal planner |
+//             }
+//         }
+//     ))
+// }
 
-fn get_cookbook<'a>(view: &'a UseState<View>, state: &'a std::rc::Rc<Vec<Cookbook>>, cookbook_id: CookbookId) -> Option<&'a Cookbook> {
-// fn get_cookbook<'a,'b>(view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId) -> Option<&'b Cookbook> {
+fn get_cookbook_store<'a>(view: &'a UseState<View>, state: &'a std::rc::Rc<Vec<UseStore<CookbookApplication, Cookbook>>>, cookbook_id: CookbookId) -> Option<&'a UseStore<CookbookApplication, Cookbook>> {
     let cookbook = state.get(cookbook_id);
     if cookbook.is_none() {
         // Cookbook not found, so set no selection.
@@ -77,6 +80,20 @@ fn get_cookbook<'a>(view: &'a UseState<View>, state: &'a std::rc::Rc<Vec<Cookboo
         view.set(View::NoSelection);
     }
     cookbook
+}
+
+fn get_cookbook<'a>(view: &'a UseState<View>, cookbook_store: &'a UseStore<CookbookApplication, Cookbook>) -> &'a Cookbook {
+    todo!()
+// fn get_cookbook<'a,'b>(view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId) -> Option<&'b Cookbook> {
+    // let cookbook = state.get(cookbook_id);
+    // if cookbook.is_none() {
+    //     // Cookbook not found, so set no selection.
+    //     // TODO: Log this and display error.
+    //     println!("Cookbook {} not found.", cookbook_id);
+
+    //     view.set(View::NoSelection);
+    // }
+    // cookbook
 }
 
 fn get_recipe<'a>(view: &'a UseState<View>, cookbook: &'a Cookbook, recipe_id: RecipeId) -> Option<&'a Recipe> {
@@ -91,56 +108,57 @@ fn get_recipe<'a>(view: &'a UseState<View>, cookbook: &'a Cookbook, recipe_id: R
     recipe
 }
 
-#[inline_props]
-fn CookbookView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId) -> Element {
-    let current_state = state.current();
-    let cookbook = get_cookbook(view, &current_state, *cookbook_id)?;
+// #[inline_props]
+// fn CookbookView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId) -> Element {
+//     let current_state = state.current();
+//     let cookbook = get_cookbook(view, &current_state, *cookbook_id)?;
+// 
+//     let pills = cookbook.recipes.iter().map(|(recipe_id, recipe)| { rsx! (
+//         RecipePill { view: view, cookbook_id: *cookbook_id, recipe_id: recipe_id.clone(), recipe: recipe.clone() } // TODO: Can we avoid this clone?
+//     )});
+//     cx.render(rsx! (
+//         Sidebar { view: view, state: state }
+//         div {
+//             class: "content",
+//             div {
+//                 class: "flex justify-center",
+//                 h1 {
+//                     class: "text-3xl font-bold mt-4 mb-6 text-center",
+//                     "{cookbook.title.value()}"
+//                 }
+//             }
+//             div {
+//                 class: "flex flex-row flex-wrap",
+//                 pills
+//                 div {
+//                     class: "basis-1/3",
+//                     div {
+//                         class: "recipe-card",
+//                         onclick: |_e| {view.set(View::CookbookRecipeNew(*cookbook_id))},
+//                         div {
+//                             class: "new-recipe",
+//                             Icon {
+//                                 class: "w-14 h-14",
+//                                 icon: Shape::Plus,
+//                             }
+//                         }
+//                         p {
+//                             class: "p-5 text-center",
+//                             "New Recipe"
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+//     ))
+// }
 
-    let pills = cookbook.recipes.iter().map(|(recipe_id, recipe)| { rsx! (
-        RecipePill { view: view, cookbook_id: *cookbook_id, recipe_id: recipe_id.clone(), recipe: recipe.clone() } // TODO: Can we avoid this clone?
-    )});
-    cx.render(rsx! (
-        Sidebar { view: view, state: state }
-        div {
-            class: "content",
-            div {
-                class: "flex justify-center",
-                h1 {
-                    class: "text-3xl font-bold mt-4 mb-6 text-center",
-                    "{cookbook.title.value()}"
-                }
-            }
-            div {
-                class: "flex flex-row flex-wrap",
-                pills
-                div {
-                    class: "basis-1/3",
-                    div {
-                        class: "recipe-card",
-                        onclick: |_e| {view.set(View::CookbookRecipeNew(*cookbook_id))},
-                        div {
-                            class: "new-recipe",
-                            Icon {
-                                class: "w-14 h-14",
-                                icon: Shape::Plus,
-                            }
-                        }
-                        p {
-                            class: "p-5 text-center",
-                            "New Recipe"
-                        }
-                    }
-                }
-            }
-        }
-    ))
-}
-
 #[inline_props]
-fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId, recipe_id: RecipeId) -> Element {
+fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<UseStore<CookbookApplication, Cookbook>>>, cookbook_id: CookbookId, recipe_id: RecipeId) -> Element {
     let current_state = state.current();
-    let cookbook = get_cookbook(view, &current_state, *cookbook_id)?;
-    let recipe = get_recipe(view, &cookbook, recipe_id.clone())?;
+    let cookbook_store = get_cookbook_store(view, &current_state, *cookbook_id)?;
+    let cookbook = get_cookbook(view, cookbook_store);
+    let recipe = get_recipe(view, cookbook, recipe_id.clone())?;
 
     cx.render(rsx! (
         Sidebar { view: view, state: state }
@@ -214,114 +232,114 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
     ))
 }
 
-#[inline_props]
-fn CookbookRecipeNewView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId) -> Element {
-    let current_state = state.current();
-    let cookbook = get_cookbook(view, &current_state, *cookbook_id)?;
-    unimplemented!()
-}
+// #[inline_props]
+// fn CookbookRecipeNewView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId) -> Element {
+//     let current_state = state.current();
+//     let cookbook = get_cookbook(view, &current_state, *cookbook_id)?;
+//     unimplemented!()
+// }
 
-#[inline_props]
-fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId, recipe_id: RecipeId) -> Element {
-    let cookbooks = state.current();
-    let cookbook = get_cookbook(view, &cookbooks, *cookbook_id)?;
-    let recipe = get_recipe(view, &cookbook, recipe_id.clone())?;
-
-    let old_recipe: Recipe = recipe.clone();
-    let old_cookbook: Cookbook = cookbook.clone();
-
-    let (form, form_state) = recipe_form(cx, &old_recipe);
-
-    let save_handler = move |mut _e| {
-        // Validate all fields.
-        if !valid_recipe_form(&form_state) {
-            return;
-        }
-
-        let mut ops = Vec::new(); // cookbook.create_batch_operations();
-
-        // Diff all fields.
-        let mut new_recipe = old_recipe.clone();
-        let new_name = form_state.name.get();
-        let new_ingredients = form_state.ingredients.get();
-        let new_instructions = form_state.instructions.get();
-        if old_recipe.title.value() != new_name {
-            // new_recipe.title = new_name.clone();
-
-            ops.push(RecipeOp::Title(new_name.clone()));
-            // let op = TwoPMapOp::Apply {
-            //     key: recipe_id,
-            //     operation: RecipeOp::TitleOp {
-            //         time: pending_ops.time(),
-            //         value: new_name,
-            //     },
-            // };
-            // let _id = pending_ops.append(op); // Take a closure that gives you the current "time"?
-        }
-        if old_recipe.ingredients.value() != new_ingredients {
-            // new_recipe.ingredients = new_ingredients.clone();
-            ops.push(RecipeOp::Ingredients(new_ingredients.clone()));
-        }
-        if old_recipe.instructions.value() != new_instructions {
-            // new_recipe.instructions = new_instructions.clone();
-            ops.push(RecipeOp::Instructions(new_instructions.clone()));
-        }
-
-        // // Save updated fields by applying CRDT operations.
-        // cookbook.apply_batch_operations(pending_ops);
-
-        // TODO: Send CRDT operations
-        // let mut new_cookbook = old_cookbook.clone();
-        // new_cookbook.recipes.insert(*recipe_id, new_recipe);
-        // let mut new_cookbooks: Vec<Cookbook> = cookbooks.clone().to_vec();
-        // new_cookbooks[*cookbook_id] = new_cookbook;
-        // state.set(new_cookbooks);
-
-        view.set(View::CookbookRecipe(*cookbook_id, recipe_id.clone()));
-    };
-
-    cx.render(rsx! (
-        Sidebar { view: view, state: state }
-        div {
-            class: "content",
-            nav {
-                class: "flex w-full mt-4 mb-6",
-                div {
-                    class: "flex-1 flex justify-start mr-auto whitespace-nowrap",
-                    div {
-                        class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
-                        onclick: |_e| {view.set(View::CookbookRecipe(*cookbook_id, recipe_id.clone()))},
-                        Icon {
-                            class: "w-6 h-6",
-                            icon: Shape::ChevronLeft,
-                        },
-                        span {
-                            "Cancel" // "{recipe.title}"
-                        }
-                    }
-                }
-                div {
-                    class: "whitespace-nowrap",
-                    h1 {
-                        class: "text-3xl font-bold text-center",
-                            "Edit Recipe"
-                    }
-                }
-                div {
-                    class: "flex-1 flex justify-end ml-auto whitespace-nowrap",
-                    div {
-                        class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
-                        onclick: save_handler,
-                        span {
-                            "Save"
-                        }
-                    }
-                }
-            }
-            form
-        }
-    ))
-}
+// #[inline_props]
+// fn CookbookRecipeEditView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId, recipe_id: RecipeId) -> Element {
+//     let cookbooks = state.current();
+//     let cookbook = get_cookbook(view, &cookbooks, *cookbook_id)?;
+//     let recipe = get_recipe(view, &cookbook, recipe_id.clone())?;
+// 
+//     let old_recipe: Recipe = recipe.clone();
+//     let old_cookbook: Cookbook = cookbook.clone();
+// 
+//     let (form, form_state) = recipe_form(cx, &old_recipe);
+// 
+//     let save_handler = move |mut _e| {
+//         // Validate all fields.
+//         if !valid_recipe_form(&form_state) {
+//             return;
+//         }
+// 
+//         let mut ops = Vec::new(); // cookbook.create_batch_operations();
+// 
+//         // Diff all fields.
+//         let mut new_recipe = old_recipe.clone();
+//         let new_name = form_state.name.get();
+//         let new_ingredients = form_state.ingredients.get();
+//         let new_instructions = form_state.instructions.get();
+//         if old_recipe.title.value() != new_name {
+//             // new_recipe.title = new_name.clone();
+// 
+//             ops.push(RecipeOp::Title(new_name.clone()));
+//             // let op = TwoPMapOp::Apply {
+//             //     key: recipe_id,
+//             //     operation: RecipeOp::TitleOp {
+//             //         time: pending_ops.time(),
+//             //         value: new_name,
+//             //     },
+//             // };
+//             // let _id = pending_ops.append(op); // Take a closure that gives you the current "time"?
+//         }
+//         if old_recipe.ingredients.value() != new_ingredients {
+//             // new_recipe.ingredients = new_ingredients.clone();
+//             ops.push(RecipeOp::Ingredients(new_ingredients.clone()));
+//         }
+//         if old_recipe.instructions.value() != new_instructions {
+//             // new_recipe.instructions = new_instructions.clone();
+//             ops.push(RecipeOp::Instructions(new_instructions.clone()));
+//         }
+// 
+//         // // Save updated fields by applying CRDT operations.
+//         // cookbook.apply_batch_operations(pending_ops);
+// 
+//         // TODO: Send CRDT operations
+//         // let mut new_cookbook = old_cookbook.clone();
+//         // new_cookbook.recipes.insert(*recipe_id, new_recipe);
+//         // let mut new_cookbooks: Vec<Cookbook> = cookbooks.clone().to_vec();
+//         // new_cookbooks[*cookbook_id] = new_cookbook;
+//         // state.set(new_cookbooks);
+// 
+//         view.set(View::CookbookRecipe(*cookbook_id, recipe_id.clone()));
+//     };
+// 
+//     cx.render(rsx! (
+//         Sidebar { view: view, state: state }
+//         div {
+//             class: "content",
+//             nav {
+//                 class: "flex w-full mt-4 mb-6",
+//                 div {
+//                     class: "flex-1 flex justify-start mr-auto whitespace-nowrap",
+//                     div {
+//                         class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
+//                         onclick: |_e| {view.set(View::CookbookRecipe(*cookbook_id, recipe_id.clone()))},
+//                         Icon {
+//                             class: "w-6 h-6",
+//                             icon: Shape::ChevronLeft,
+//                         },
+//                         span {
+//                             "Cancel" // "{recipe.title}"
+//                         }
+//                     }
+//                 }
+//                 div {
+//                     class: "whitespace-nowrap",
+//                     h1 {
+//                         class: "text-3xl font-bold text-center",
+//                             "Edit Recipe"
+//                     }
+//                 }
+//                 div {
+//                     class: "flex-1 flex justify-end ml-auto whitespace-nowrap",
+//                     div {
+//                         class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
+//                         onclick: save_handler,
+//                         span {
+//                             "Save"
+//                         }
+//                     }
+//                 }
+//             }
+//             form
+//         }
+//     ))
+// }
 
 #[inline_props]
 fn RecipePill<'a>(cx: Scope, view: &'a UseState<View>, cookbook_id: CookbookId, recipe_id: RecipeId, recipe: Recipe) -> Element {
@@ -347,10 +365,13 @@ fn RecipePill<'a>(cx: Scope, view: &'a UseState<View>, cookbook_id: CookbookId, 
 }
 
 #[inline_props]
-fn Sidebar<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>) -> Element {
-    let cookbooks = state.iter().enumerate().map(|(i,cookbook)| rsx!(
-        SidebarItem { title: &cookbook.title.value(), icon: Shape::BookOpen, selected: is_cookbook_selected(&view, i), onclick: move |_e| {view.set(View::Cookbook(i))} }
-    ));
+fn Sidebar<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<UseStore<CookbookApplication, Cookbook>>>) -> Element {
+    let cookbooks = state.iter().enumerate().map(|(i,cookbook_store)| {
+        let cookbook = get_cookbook(view, cookbook_store);
+        rsx!(
+            SidebarItem { title: &cookbook.title.value(), icon: Shape::BookOpen, selected: is_cookbook_selected(&view, i), onclick: move |_e| {view.set(View::Cookbook(i))} }
+        )
+    });
 
     cx.render(rsx! (
         div {

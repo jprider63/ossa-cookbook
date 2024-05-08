@@ -9,6 +9,9 @@ use odyssey_crdt::time::LamportTimestamp;
 // use im::OrdMap;
 use std::collections::BTreeMap;
 
+use dioxus::prelude::Props;
+use crate::{CookbookApplication, UseStore};
+
 // TODO: Actually switch to the corresponding CRDTs.
 pub type Sequence<A> = Vec<A>;
 pub type OrderedMap<K,V> = BTreeMap<K,V>;
@@ -19,7 +22,7 @@ pub type Image = ();
 
 pub type UserId = u32;
 pub type Time = LamportTimestamp<UserId>; // TODO: Switch to hashes for logical time. XXX
-// pub struct RecipeId(Time); // JP: How do we get this newtype wrapper to work? `Into` instance?
+// pub struct RecipeId(Time); // TODO: Newtype wrap this. JP: How do we get this newtype wrapper to work? `Into` instance?
 pub type RecipeId = Time;
 #[derive(Clone)]
 pub struct Recipe {
@@ -44,7 +47,7 @@ impl CRDT for Recipe {
     }
 }
 
-pub type CookbookId = usize;
+pub type CookbookId = usize; // TODO: Newtype wrap this.
 #[derive(Clone)]
 pub struct Cookbook {
     pub title: LWW<Time, String>,
@@ -64,3 +67,10 @@ impl CRDT for Cookbook {
         todo!()
     }
 }
+
+// use std::marker::PhantomData;
+// #[derive(Props)]
+// pub struct State<'a> {
+//     pub cookbooks: Vec<UseStore<CookbookApplication, Cookbook>>,
+//     _phantom: PhantomData<'a, ()>,
+// }

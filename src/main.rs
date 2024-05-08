@@ -150,7 +150,7 @@ fn main() {
     dioxus_desktop::launch_with_props(app, odyssey_prop, c);
 }
 
-fn initial_demo_state() -> Vec<Cookbook> {
+fn initial_demo_state() -> Cookbook {
     fn lt() -> LamportTimestamp<UserId> {
         let user_id = 0; // TODO
         LamportTimestamp::current(user_id)
@@ -181,21 +181,29 @@ fn initial_demo_state() -> Vec<Cookbook> {
     //                               (5, recipe.clone()),
     //                               (6, recipe.clone()),
     // ]);
-    let book1 = Cookbook {title: lww("Family Recipes".into()), recipes: recipes.clone()};
-    let book2 = Cookbook {title: lww("My Recipes".into()), recipes: recipes};
-    vec![book1, book2]
+    // let book1 = Cookbook {title: lww("Family Recipes".into()), recipes: recipes.clone()};
+    // let book2 = Cookbook {title: lww("My Recipes".into()), recipes: recipes};
+    // vec![book1, book2]
     // TODO: Should be a Map CRDT. Include other store metadata like sharing/permissions, peers, etc
+    Cookbook {title: lww("My Recipes".into()), recipes: recipes}
 }
 
 // #[inline_props]
 fn app(cx: Scope<OdysseyProp<CookbookApplication>>) -> Element {
-    let state = use_state(&cx, || {
-        initial_demo_state()
-    });
+    // let state = use_state(&cx, || {
+    //     initial_demo_state()
+    // });
     let odyssey = &cx.props.odyssey;
 
-    let init_st = initial_demo_state();
-    let recipe_store = odyssey.create_store(init_st, MemoryStorage::new());
+    let state = use_state(&cx, || {
+        let init_st = initial_demo_state();
+        let recipe_store = odyssey.create_store(init_st, MemoryStorage::new());
+        let recipe_store = use_store(recipe_store);
+        vec![recipe_store]
+    });
+    // let state = State {
+    //     cookbooks: vec![recipe_store],
+    // }; // JP: Include map from cookbook StoreIds to Cookbooks?
 
     cx.render(rsx! (
         style { [rsx!{include_str!("../dist/style.css")}].into_iter() }
@@ -218,3 +226,18 @@ impl OdysseyType for CookbookApplication {
     type ECGHeader = TestHeader; // TODO
 }
 
+
+// TODO: Create `odyssey-dioxus` crate?
+use odyssey_core::core::StoreHandle;
+struct UseStore<OT: OdysseyType, T> {
+    handle: StoreHandle<OT, T>,
+    // state: UseState<T>,
+}
+
+pub fn use_store<OT: OdysseyType, T>(handle: StoreHandle<OT, T>) -> UseStore<OT, T> {
+    todo!()
+}
+
+// impl<OT: OdysseyType, T> UseStore<OT, T> {
+//     // TODO: Apply operations, get current state, etc
+// }
