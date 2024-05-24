@@ -6,15 +6,18 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dioxus = {version = "0.3.1"}
-dioxus-desktop = "0.3.0"
-dioxus-heroicons = {git = "https://github.com/jprider63/dioxus-heroicons.git", commit="33e9dbc89e174daf315ddcb867d4ec74a4c1e362"}
-dioxus_markdown = {git = "https://github.com/jprider63/dioxus-markdown.git", commit="73fa25e58e9331ed948b16fb5d80d01a2aa1d0e4"}
+clap = { version = "4.3.10", features = ["derive"] }
+dioxus = {version = "0.5.1"}
+dioxus-desktop = "0.5.1"
+dioxus-heroicons = {git = "https://github.com/jprider63/dioxus-heroicons.git", rev="2e6292a860de53b4ce7f37e81d7421fed41a6bd6"}
+dioxus_markdown = {git = "https://github.com/jprider63/dioxus-markdown.git", rev="5ca15aa634de28b9241c2e0acc863231f5618107"}
+futures = "*"
 keyboard-types = "*"
 im = "15.1.0"
+manganis = "*"
 odyssey-core = {path = "/Users/james/Documents/Projects/odyssey/odyssey-core"}
 odyssey-crdt = {path = "/Users/james/Documents/Projects/odyssey/odyssey-crdt"}
-clap = { version = "4.3.10", features = ["derive"] }
+tauri = "*"
 
 # tmp?
 tokio = {version="*", features=["rt","rt-multi-thread","net"]}

@@ -1,5 +1,7 @@
 pub mod recipe;
 
+use std::ops::Deref;
+
 use dioxus::events::MouseEvent;
 use dioxus_markdown::Markdown;
 use dioxus::prelude::*;
@@ -31,46 +33,46 @@ fn is_cookbook_selected(view: &View, cid: CookbookId) -> bool {
     }
 }
 
-#[inline_props]
+#[component]
 // pub fn layout(cx: Scope, state: Vec<UseStore<CookbookApplication, Cookbook>>) -> Element {
-pub fn layout<'a>(cx: Scope, state: &'a UseState<Vec<UseStore<CookbookApplication, Cookbook>>>) -> Element {
-    let view = use_state(&cx, || {
+pub fn layout(state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>) -> Element {
+    let view = use_signal(|| {
         View::NoSelection
     });
 
-    let v = view.current();
+    let v = view.read();
     let r = match &*v {
         // View::Login => todo!(),
-        // View::NoSelection => rsx! ( NoSelectionView { view: view, state: state } ),
+        View::NoSelection => rsx! ( NoSelectionView { view: view, state: state } ),
         // View::Cookbook(cookbookid) => rsx! ( CookbookView { view: view, state: state, cookbook_id: *cookbookid } ),
         View::CookbookRecipe(cookbookid, recipeid) => rsx! ( CookbookRecipeView { view: view, state: state, cookbook_id: *cookbookid, recipe_id: recipeid.clone() } ),
         // View::CookbookRecipeNew(cookbookid) => rsx! ( CookbookRecipeNewView { view: view, state: state, cookbook_id: *cookbookid } ),
         // View::CookbookRecipeEdit(cookbookid, recipeid) => rsx! ( CookbookRecipeEditView { view: view, state: state, cookbook_id: *cookbookid, recipe_id: recipeid.clone() } ),
         _ => todo!(),
     };
-    cx.render(rsx!(
+    rsx!(
         div {
             class: "wrapper",
-            r
+            { r }
         }
-    ))
+    )
 }
 
-// #[inline_props]
-// fn NoSelectionView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>) -> Element {
-//     cx.render(rsx! (
-//         Sidebar { view: view, state: state }
-//         div {
-//             class: "content",
-//             div {
-//                 class: "flex justify-center items-center h-screen",
-//                 "No selection" // No selection. | New cookbook | | New meal planner |
-//             }
-//         }
-//     ))
-// }
+#[component]
+fn NoSelectionView(view: Signal<View>, state: Signal<Vec<UseStore<CookbookApplication,Cookbook>>>) -> Element {
+    rsx! (
+        Sidebar { view: view, state: state }
+        div {
+            class: "content",
+            div {
+                class: "flex justify-center items-center h-screen",
+                "No selection" // No selection. | New cookbook | | New meal planner |
+            }
+        }
+    )
+}
 
-fn get_cookbook_store<'a>(view: &'a UseState<View>, state: &'a std::rc::Rc<Vec<UseStore<CookbookApplication, Cookbook>>>, cookbook_id: CookbookId) -> Option<&'a UseStore<CookbookApplication, Cookbook>> {
+fn get_cookbook_store(mut view: Signal<View>, state: &std::rc::Rc<Vec<UseStore<CookbookApplication, Cookbook>>>, cookbook_id: CookbookId) -> Option<&UseStore<CookbookApplication, Cookbook>> {
     let cookbook = state.get(cookbook_id);
     if cookbook.is_none() {
         // Cookbook not found, so set no selection.
@@ -82,7 +84,7 @@ fn get_cookbook_store<'a>(view: &'a UseState<View>, state: &'a std::rc::Rc<Vec<U
     cookbook
 }
 
-fn get_cookbook<'a>(view: &'a UseState<View>, cookbook_store: &'a UseStore<CookbookApplication, Cookbook>) -> &'a Cookbook {
+fn get_cookbook<'a>(view: Signal<View>, cookbook_store: &UseStore<CookbookApplication, Cookbook>) -> &Cookbook {
     todo!()
 // fn get_cookbook<'a,'b>(view: &'a UseState<View>, state: &'a UseState<Vec<Cookbook>>, cookbook_id: CookbookId) -> Option<&'b Cookbook> {
     // let cookbook = state.get(cookbook_id);
@@ -96,7 +98,8 @@ fn get_cookbook<'a>(view: &'a UseState<View>, cookbook_store: &'a UseStore<Cookb
     // cookbook
 }
 
-fn get_recipe<'a>(view: &'a UseState<View>, cookbook: &'a Cookbook, recipe_id: RecipeId) -> Option<&'a Recipe> {
+
+fn get_recipe(mut view: Signal<View>, cookbook: &Cookbook, recipe_id: RecipeId) -> Option<&Recipe> {
     let recipe = cookbook.recipes.get(&recipe_id);
     if recipe.is_none() {
         // Recipe not found, so set no selection.
@@ -153,14 +156,14 @@ fn get_recipe<'a>(view: &'a UseState<View>, cookbook: &'a Cookbook, recipe_id: R
 //     ))
 // }
 
-#[inline_props]
-fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<UseStore<CookbookApplication, Cookbook>>>, cookbook_id: CookbookId, recipe_id: RecipeId) -> Element {
-    let current_state = state.current();
-    let cookbook_store = get_cookbook_store(view, &current_state, *cookbook_id)?;
+#[component]
+fn CookbookRecipeView(view: Signal<View>, state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>, cookbook_id: CookbookId, recipe_id: RecipeId) -> Element {
+    let current_state = state.read();
+    let cookbook_store = todo!(); // get_cookbook_store(view, &current_state, *cookbook_id)?;
     let cookbook = get_cookbook(view, cookbook_store);
-    let recipe = get_recipe(view, cookbook, recipe_id.clone())?;
+    let recipe = get_recipe(view, cookbook, recipe_id)?;
 
-    cx.render(rsx! (
+    rsx! (
         Sidebar { view: view, state: state }
         div {
             class: "content",
@@ -170,7 +173,7 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
                     class: "flex-1 flex justify-start mr-auto whitespace-nowrap",
                     div {
                         class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
-                        onclick: |_e| {view.set(View::Cookbook(*cookbook_id))},
+                        onclick: |_e| {view.set(View::Cookbook(cookbook_id))},
                         Icon {
                             class: "w-6 h-6",
                             icon: Shape::ChevronLeft,
@@ -191,7 +194,7 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
                     class: "flex-1 flex justify-end ml-auto whitespace-nowrap",
                     div {
                         class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
-                        onclick: |_e| {view.set(View::CookbookRecipeEdit(*cookbook_id, recipe_id.clone()))},
+                        onclick: |_e| {view.set(View::CookbookRecipeEdit(cookbook_id, recipe_id.clone()))},
                         span {
                             "Edit"
                         }
@@ -210,11 +213,11 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
                 }
                 ul {
                     class: "selectable",
-                    recipe.ingredients.value().iter().map(|ingredient| rsx! (
+                    { recipe.ingredients.value().iter().map(|ingredient| rsx! (
                         li {
                             "{ingredient}"
                         }
-                    ))
+                    )) }
                 }
             }
             div {
@@ -224,12 +227,12 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
                     "Instructions"
                 }
                 Markdown {
-                    class: "instructions selectable",
+                    class: use_signal(|| "instructions selectable".to_string()),
                     content: "{recipe.instructions.value()}",
                 }
             }
         }
-    ))
+    )
 }
 
 // #[inline_props]
@@ -341,39 +344,42 @@ fn CookbookRecipeView<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseSta
 //     ))
 // }
 
-#[inline_props]
-fn RecipePill<'a>(cx: Scope, view: &'a UseState<View>, cookbook_id: CookbookId, recipe_id: RecipeId, recipe: Recipe) -> Element {
-    cx.render(rsx! (
-        div {
-            class: "basis-1/3",
-            div {
-                class: "recipe-card",
-                onclick: |_e| {view.set(View::CookbookRecipe(*cookbook_id, recipe_id.clone()))},
-                img {
-                    src: "https://food.fnr.sndimg.com/content/dam/images/food/fullset/2008/8/14/0/GT0107_kalbi_s4x3.jpg.rend.hgtvcom.1280.720.suffix/1519669666497.jpeg"
-                }
-                div {
-                    class: "border-t",
-                    p {
-                        class: "p-5 text-center",
-                        "{recipe.title.value()}"
-                    }
-                }
-            }
-        }
-    ))
-}
+// #[component]
+// fn RecipePill(view: Signal<View>, cookbook_id: CookbookId, recipe_id: RecipeId, recipe: Recipe) -> Element {
+//     rsx! (
+//         div {
+//             class: "basis-1/3",
+//             div {
+//                 class: "recipe-card",
+//                 onclick: |_e| {view.set(View::CookbookRecipe(cookbook_id, recipe_id))},
+//                 img {
+//                     src: "https://food.fnr.sndimg.com/content/dam/images/food/fullset/2008/8/14/0/GT0107_kalbi_s4x3.jpg.rend.hgtvcom.1280.720.suffix/1519669666497.jpeg"
+//                 }
+//                 div {
+//                     class: "border-t",
+//                     p {
+//                         class: "p-5 text-center",
+//                         "{recipe.title.value()}"
+//                     }
+//                 }
+//             }
+//         }
+//     )
+// }
 
-#[inline_props]
-fn Sidebar<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<UseStore<CookbookApplication, Cookbook>>>) -> Element {
-    let cookbooks = state.iter().enumerate().map(|(i,cookbook_store)| {
-        let cookbook = get_cookbook(view, cookbook_store);
-        rsx!(
-            SidebarItem { title: &cookbook.title.value(), icon: Shape::BookOpen, selected: is_cookbook_selected(&view, i), onclick: move |_e| {view.set(View::Cookbook(i))} }
-        )
+#[component]
+fn Sidebar(view: Signal<View>, state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>) -> Element {
+    let cookbooks = state.read();
+    let cookbooks = cookbooks.iter().filter_map(|cookbook_store|
+
+            cookbook_store.get_current_state()() // WTF is this syntax!!!
+        ).enumerate().map(|(i,cookbook)| {
+            rsx!(
+                SidebarItem { title: cookbook.title.value(), icon: Shape::BookOpen, selected: is_cookbook_selected(&view.read(), i), onclick: move |_e| {view.set(View::Cookbook(i))} }
+            )
     });
 
-    cx.render(rsx! (
+    rsx! (
         div {
             class: "sidebar",
             div {
@@ -381,7 +387,7 @@ fn Sidebar<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<UseS
                 ul {
                     class: "flex flex-col py-4 space-y-1",
                     SidebarHeader { title: "COOKBOOKS" }
-                    cookbooks
+                    { cookbooks }
                     SidebarHeader { title: "MEAL PLANNER" }
                     SidebarItem   { title: "Weekly meals", icon: Shape::PencilSquare, onclick: |_e| {println!("TODO!")}, selected: false }
                     SidebarItem   { title: "Thanksgiving", icon: Shape::PencilSquare, selected: false, onclick: |_e| {println!("TODO!")} }
@@ -391,56 +397,56 @@ fn Sidebar<'a>(cx: Scope, view: &'a UseState<View>, state: &'a UseState<Vec<UseS
                 }
             }
         }
-    ))
+    )
 }
 
-#[derive(Props)]
-pub struct SidebarHeaderProps<'a> {
-    title: &'a str
+#[derive(Props, Clone, PartialEq)]
+pub struct SidebarHeaderProps { // <'a> {
+    title: String, // &'a str
 }
 
-pub fn SidebarHeader<'a>(cx: Scope<'a, SidebarHeaderProps<'a>>) -> Element {
-    cx.render(rsx! (
+pub fn SidebarHeader(props: SidebarHeaderProps) -> Element {
+    rsx! (
         li {
             class: "px-5",
             div {
                 class: "flex flex-row items-center h-8",
                 div {
                     class: "text-sm font-light tracking-wide text-gray-500",
-                    "{cx.props.title}"
+                    "{props.title}"
                 }
             }
         }
-    ))
+    )
 }
 
-#[derive(Props)]
-pub struct SidebarItemProps<'a> {
-    title: &'a str,
+#[derive(Props, Clone, PartialEq)]
+pub struct SidebarItemProps {
+    title: String, // &'a str,
     icon: Shape,
-    onclick: EventHandler<'a, MouseEvent>,
+    onclick: EventHandler<MouseEvent>,
     selected: bool,
 }
 
-pub fn SidebarItem<'a>(cx: Scope<'a, SidebarItemProps<'a>>) -> Element {
-    let is_selected = if cx.props.selected {"selected"} else {""};
-    cx.render(rsx! (
+pub fn SidebarItem<'a>(props: SidebarItemProps) -> Element {
+    let is_selected = if props.selected {"selected"} else {""};
+    rsx! (
         li {
             div {
                 class: format_args!("sidebar-item {}", is_selected),
-                onclick: |e| cx.props.onclick.call(e),
+                onclick: move |e| props.onclick.call(e),
                 span {
                     class: "inline-flex justify-center items-center ml-4",
                     Icon {
                         class: "w-6 h-6",
-                        icon: cx.props.icon,
+                        icon: props.icon,
                     }
                 }
                 span {
                     class: "ml-2 text-sm tracking-wide truncate",
-                    "{cx.props.title}"
+                    "{props.title}"
                 }
             }
         }
-    ))
+    )
 }

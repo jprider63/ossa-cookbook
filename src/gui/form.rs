@@ -1,55 +1,61 @@
 use dioxus::prelude::*;
 
-#[derive(Props)]
-pub struct FieldLabelProps<'a> {
-    label: &'a str,
-    id: &'a str,
-    field: Element<'a>,
+#[derive(Props, Clone, PartialEq)]
+pub struct FieldLabelProps {
+    label: String,
+    id: String,
+    field: Element,
 }
 
-pub fn FieldLabel<'a>(cx: Scope<'a, FieldLabelProps<'a>>) -> Element {
-    cx.render(rsx! (
+pub fn FieldLabel(props: FieldLabelProps) -> Element {
+    rsx! (
         div {
             class: "flex flex-col mb-4",
             label {
                 class: "font-bold mb-2",
-                r#for: cx.props.id,
-                cx.props.label
+                r#for: props.id,
+                { props.label }
             }
-            &cx.props.field
+            { props.field }
         }
-    ))
+    )
 }
 
-#[derive(Props)]
-pub struct TextFieldProps<'a> {
-    id: &'a str,
-    class: Option<&'a str>,
-    placeholder: &'a str,
-    value: &'a str,
-    oninput: EventHandler<'a,Event<FormData>>,
-    onkeyup: Option<EventHandler<'a,Event<KeyboardData>>>,
+#[derive(Props, Clone)]
+pub struct TextFieldProps {
+    id: String,
+    class: Option<String>,
+    placeholder: String,
+    value: String,
+    oninput: EventHandler<Event<FormData>>,
+    onkeyup: Option<EventHandler<Event<KeyboardData>>>,
     validation_fn: for<'b> fn(&'b str) -> Result<(), &'static str>,
 }
 
-pub fn TextField<'a>(cx: Scope<'a, TextFieldProps<'a>>) -> Element {
-    let err: Result<(), &'static str> = (cx.props.validation_fn)(cx.props.value);
+impl PartialEq for TextFieldProps {
+    fn eq(&self, other: &Self) -> bool {
+        todo!()
+    }
+}
 
-    cx.render(rsx! (
+pub fn TextField<'a>(props: TextFieldProps) -> Element {
+    let err: Result<(), &'static str> = (props.validation_fn)(&props.value);
+
+    rsx! (
         input {
-            class: format_args!("{} appearance-none border rounded py-1 px-2 {}", cx.props.class.unwrap_or(""), if err.is_err() {"border-red-500"} else {""}),
-            r#id: cx.props.id,
+            class: format_args!("{} appearance-none border rounded py-1 px-2 {}", props.class.unwrap_or("".to_string()), if err.is_err() {"border-red-500"} else {""}),
+            r#id: props.id,
             r#type: "text",
-            placeholder: cx.props.placeholder,
-            oninput: move |evt| cx.props.oninput.call(evt),
-            onkeyup: move |evt| cx.props.onkeyup.as_ref().map_or((), |f| f.call(evt)),
-            value: "{cx.props.value}"
+            placeholder: props.placeholder,
+            oninput: move |evt| props.oninput.call(evt),
+            onkeyup: move |evt| props.onkeyup.as_ref().map_or((), |f| f.call(evt)),
+            value: "{props.value}"
         }
-        err.err().map(|e| rsx!(
+        { err.err().map(|e| rsx!(
             p {
                 class: format_args!("text-red-500 text-sm"),
                 "{e}"
             }
-        ))
-    ))
+        )) }
+    )
 }

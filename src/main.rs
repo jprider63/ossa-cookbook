@@ -1,6 +1,7 @@
 use clap::Parser;
 use dioxus::prelude::*;
-use dioxus_desktop::tao::menu::{AboutMetadata, MenuBar, MenuItem, MenuItemAttributes};
+// use dioxus_desktop::tao::menu::{AboutMetadata, MenuBar, MenuItem, MenuItemAttributes};
+use futures::StreamExt;
 use odyssey_core::{Odyssey, OdysseyConfig, core::OdysseyType};
 use odyssey_core::network::p2p::{P2PManager, P2PSettings};
 use odyssey_core::storage::memory::MemoryStorage;
@@ -12,8 +13,10 @@ use odyssey_crdt::{
     time::LamportTimestamp,
     CRDT,
 };
+use std::borrow::BorrowMut;
 use std::collections::BTreeMap;
 use std::net::{Ipv4Addr, SocketAddrV4};
+use std::rc::Rc;
 
 use crate::state::*;
 
@@ -63,6 +66,7 @@ impl WindowExt for Window {
 */
 
 const app_name: &str = "Odyssey Cookbook";
+// const CSS: &str = manganis::mg!(file("./dist/style.css"));
 
 fn main() {
     let args = cli::Arguments::parse();
@@ -77,7 +81,7 @@ fn main() {
     // let odyssey: Odyssey<Sha256Hash> = Odyssey::new(odyssey_config);
     // odyssey.go_online(); // start_network(); // Starts server, connects to DHT, connect to known peers, etc
     // // odyssey.go_offline(); // stop_network();
-    let odyssey: Odyssey<CookbookApplication> = Odyssey::start(odyssey_config);
+    // let odyssey: Odyssey<CookbookApplication> = Odyssey::start(odyssey_config);
 
     // if args.port.is_some() {
     //     // TODO: join_store()
@@ -97,57 +101,60 @@ fn main() {
     //     cli::run_client();
     // }
 
-    let mut about_menu = MenuBar::new();
-    about_menu.add_native_item(MenuItem::About(app_name.into(), AboutMetadata::default()));
-    about_menu.add_native_item(MenuItem::Separator);
-    about_menu.add_native_item(MenuItem::Hide);
-    about_menu.add_native_item(MenuItem::HideOthers);
-    about_menu.add_native_item(MenuItem::ShowAll);
-    about_menu.add_native_item(MenuItem::Separator);
-    about_menu.add_native_item(MenuItem::Quit);
+    // let mut about_menu = MenuBar::new();
+    // about_menu.add_native_item(MenuItem::About(app_name.into(), AboutMetadata::default()));
+    // about_menu.add_native_item(MenuItem::Separator);
+    // about_menu.add_native_item(MenuItem::Hide);
+    // about_menu.add_native_item(MenuItem::HideOthers);
+    // about_menu.add_native_item(MenuItem::ShowAll);
+    // about_menu.add_native_item(MenuItem::Separator);
+    // about_menu.add_native_item(MenuItem::Quit);
 
-    let mut file_menu = MenuBar::new();
-    file_menu.add_native_item(MenuItem::CloseWindow);
+    // let mut file_menu = MenuBar::new();
+    // file_menu.add_native_item(MenuItem::CloseWindow);
 
-    let mut edit_menu = MenuBar::new();
-    edit_menu.add_native_item(MenuItem::Undo);
-    edit_menu.add_native_item(MenuItem::Redo);
-    edit_menu.add_native_item(MenuItem::Separator);
-    edit_menu.add_native_item(MenuItem::Cut);
-    edit_menu.add_native_item(MenuItem::Copy);
-    edit_menu.add_native_item(MenuItem::Paste);
-    edit_menu.add_native_item(MenuItem::Separator);
-    edit_menu.add_native_item(MenuItem::SelectAll);
+    // let mut edit_menu = MenuBar::new();
+    // edit_menu.add_native_item(MenuItem::Undo);
+    // edit_menu.add_native_item(MenuItem::Redo);
+    // edit_menu.add_native_item(MenuItem::Separator);
+    // edit_menu.add_native_item(MenuItem::Cut);
+    // edit_menu.add_native_item(MenuItem::Copy);
+    // edit_menu.add_native_item(MenuItem::Paste);
+    // edit_menu.add_native_item(MenuItem::Separator);
+    // edit_menu.add_native_item(MenuItem::SelectAll);
 
-    let view_menu = MenuBar::new();
-    // TODO: Hide tab bar items.
+    // let view_menu = MenuBar::new();
+    // // TODO: Hide tab bar items.
 
-    let mut window_menu = MenuBar::new();
-    window_menu.add_native_item(MenuItem::Minimize);
-    window_menu.add_native_item(MenuItem::Zoom);
-    // window_menu.add_native_item(MenuItem::Separator);
-    // window_menu.add_native_item(MenuItem::BringAllToFront);
-    // window_menu.add_native_item(MenuItem::Window);
-    // window_menu.add_native_item(MenuItem::CloseWindow);
+    // let mut window_menu = MenuBar::new();
+    // window_menu.add_native_item(MenuItem::Minimize);
+    // window_menu.add_native_item(MenuItem::Zoom);
+    // // window_menu.add_native_item(MenuItem::Separator);
+    // // window_menu.add_native_item(MenuItem::BringAllToFront);
+    // // window_menu.add_native_item(MenuItem::Window);
+    // // window_menu.add_native_item(MenuItem::CloseWindow);
 
-    let mut help_menu = MenuBar::new();
-    help_menu.add_item(MenuItemAttributes::new(&format!("{} Help", app_name)));
+    // let mut help_menu = MenuBar::new();
+    // help_menu.add_item(MenuItemAttributes::new(&format!("{} Help", app_name)));
 
-    let mut menu = MenuBar::new();
-    menu.add_submenu( app_name, true, about_menu);
-    menu.add_submenu( "File", true, file_menu);
-    menu.add_submenu( "Edit", true, edit_menu);
-    menu.add_submenu( "View", true, view_menu);
-    menu.add_submenu( "Window", true, window_menu);
-    menu.add_submenu( "Help", true, help_menu);
+    // let mut menu = MenuBar::new();
+    // menu.add_submenu( app_name, true, about_menu);
+    // menu.add_submenu( "File", true, file_menu);
+    // menu.add_submenu( "Edit", true, edit_menu);
+    // menu.add_submenu( "View", true, view_menu);
+    // menu.add_submenu( "Window", true, window_menu);
+    // menu.add_submenu( "Help", true, help_menu);
 
-    let w = dioxus_desktop::WindowBuilder::new().with_title(app_name)
-                                                .with_menu(menu);
+    let w = dioxus_desktop::WindowBuilder::new().with_title(app_name);
+                                                // .with_menu(menu); // TODO XXX
     let c = dioxus_desktop::Config::new().with_window(w);
-    let odyssey_prop = OdysseyProp {
-        odyssey,
-    };
-    dioxus_desktop::launch_with_props(app, odyssey_prop, c);
+    // let odyssey_prop = OdysseyProp::new(odyssey);
+    // dioxus_desktop::launch_with_props(app, odyssey_prop, c);
+    dioxus_desktop::launch::launch(app, vec![Box::new(move || {
+        let odyssey: Odyssey<CookbookApplication> = Odyssey::start(odyssey_config);
+        let odyssey_prop = OdysseyProp::new(odyssey);
+        Box::new(odyssey_prop)
+    })], c);
 }
 
 fn initial_demo_state() -> Cookbook {
@@ -189,34 +196,60 @@ fn initial_demo_state() -> Cookbook {
 }
 
 // #[inline_props]
-fn app(cx: Scope<OdysseyProp<CookbookApplication>>) -> Element {
+// fn app(cx: Scope<OdysseyProp<CookbookApplication>>) -> Element {
+fn app() -> Element {
     // let state = use_state(&cx, || {
     //     initial_demo_state()
     // });
-    let odyssey = &cx.props.odyssey;
 
-    let state = use_state(&cx, || {
+    // let odyssey = use_context::<OdysseyProp<CookbookApplication>>().odyssey;
+    let recipe_store = use_store(|odyssey| {
         let init_st = initial_demo_state();
-        let recipe_store = odyssey.create_store(init_st, MemoryStorage::new());
-        let recipe_store = use_store(recipe_store);
+        (*odyssey).create_store(init_st, MemoryStorage::new())
+    });
+    let state = use_signal(|| {
+        // let odyssey: Odyssey<CookbookApplication> = todo!();
+        // let init_st = initial_demo_state();
+        // let recipe_store = (*odyssey).create_store(init_st, MemoryStorage::new());
+        // let recipe_store = use_store(recipe_store);
         vec![recipe_store]
     });
     // let state = State {
     //     cookbooks: vec![recipe_store],
     // }; // JP: Include map from cookbook StoreIds to Cookbooks?
 
-    cx.render(rsx! (
-        style { [rsx!{include_str!("../dist/style.css")}].into_iter() }
+    rsx! (
+        head {
+            style {{ include_str!("../dist/style.css") }}
+            // link {
+            //     rel: "stylesheet",
+            //     href: { manganis::mg!(file("/dist/style.css")) }
+            // }
+        }
 
-        rsx! (
-            gui::layout::layout { state: state }
-        )
-    ))
+        gui::layout::layout { state: state }
+    )
 }
 
-#[derive(Props)]
-struct OdysseyProp<A> {
-    odyssey: Odyssey<A>,
+// #[derive(Props, PartialEq)]
+struct OdysseyProp<A: 'static> {
+    odyssey: Rc<Odyssey<A>>,
+}
+
+impl<A: 'static> Clone for OdysseyProp<A> {
+    fn clone(&self) -> Self {
+        OdysseyProp {
+            odyssey: self.odyssey.clone(),
+        }
+    }
+}
+
+impl<A> OdysseyProp<A> {
+    fn new(odyssey: Odyssey<A>) -> Self {
+        OdysseyProp {
+            odyssey: Rc::new(odyssey),
+        }
+    }
 }
 
 enum CookbookApplication {}
@@ -229,15 +262,64 @@ impl OdysseyType for CookbookApplication {
 
 // TODO: Create `odyssey-dioxus` crate?
 use odyssey_core::core::StoreHandle;
-struct UseStore<OT: OdysseyType, T> {
-    handle: StoreHandle<OT, T>,
-    // state: UseState<T>,
+struct UseStore<OT: OdysseyType, T: CRDT + 'static> {
+    handle: Rc<StoreHandle<OT, T>>,
+    state: Signal<Option<T>>,
+    // peers, connections, etc
 }
 
-pub fn use_store<OT: OdysseyType, T>(handle: StoreHandle<OT, T>) -> UseStore<OT, T> {
-    todo!()
+// fn use_store<OT: OdysseyType, T>(handle: StoreHandle<OT, T>) -> UseStore<OT, T> {
+fn use_store<OT: OdysseyType + 'static, T: CRDT, F>(build_store_handle: F) -> UseStore<OT, T>
+where
+    F: FnOnce(&Odyssey<CookbookApplication>) -> StoreHandle<OT, T>,
+{
+    // JP: How do we put this inside the `use_hook`?
+    let odyssey = use_context::<OdysseyProp<CookbookApplication>>().odyssey;
+    let (handle, mut recv_state) = use_hook(|| {
+        let mut h = build_store_handle(&odyssey);
+        let recv_st = h.subscribe_to_state();
+
+        // // Get current state.
+        // let st = recv_st.blocking_recv().unwrap();
+
+
+        let h = Rc::new(h); // JP: Annoyingly required since dioxus requires clone... XXX
+        // let st = Rc::new(st); // JP: Annoyingly required since dioxus requires clone... XXX
+        // let recv_st = Rc::new(recv_st); // JP: Annoyingly required since dioxus requires clone... XXX
+        let recv_st = CopyValue::new(recv_st); // JP: Annoyingly required since dioxus requires clone... XXX
+        (h, recv_st)
+    });
+    let mut state = use_signal(|| {
+        None
+    });
+    // let mut state: Signal<T> = use_signal(|| {
+    //     // let recv_state = Rc::get_mut(&mut recv_state).unwrap();
+    //     let init_st = recv_state.write().blocking_recv().unwrap();
+    //     init_st
+    //     // Rc::into_inner(init_st).unwrap()
+    // });
+    // let handle2 = handle.clone();
+    // TODO...
+    use_future(move || async move {
+    //     let mut recv_state = handle2.subscribe_to_state();
+    //     // let mut recv_state = Rc::try_unwrap(recv_state).unwrap();
+    //     // let mut recv_state = recv_state.clone();
+    //     // let recv_state = Rc::get_mut(&mut recv_state).unwrap();
+        while let Some(st) = recv_state.write().recv().await {
+            // *state.write() = st;
+            println!("Received state!");
+            state.set(Some(st));
+        }
+    });
+    UseStore {
+        handle,
+        state,
+    }
 }
 
-// impl<OT: OdysseyType, T> UseStore<OT, T> {
-//     // TODO: Apply operations, get current state, etc
-// }
+impl<OT: OdysseyType, T: CRDT> UseStore<OT, T> {
+    // TODO: Apply operations, get current state, etc
+    pub fn get_current_state(&self) -> Signal<Option<T>> {
+        self.state
+    }
+}

@@ -4,21 +4,21 @@ use keyboard_types::Key;
 use crate::gui::form::{FieldLabel, TextField};
 use crate::state::Recipe;
 
-pub struct RecipeForm<'a> {
-    pub name: &'a UseState<String>,
-    pub ingredients: &'a UseState<Vec<String>>,
+pub struct RecipeForm {
+    pub name: Signal<String>,
+    pub ingredients: Signal<Vec<String>>,
     // TODO: new_ingredient?
-    pub instructions: &'a UseState<String>,
+    pub instructions: Signal<String>,
 }
 
 pub fn valid_recipe_form(recipe_form: &RecipeForm) -> bool {
-    let new_name = recipe_form.name.get();
-    let new_ingredients = recipe_form.ingredients.get();
+    let new_name = recipe_form.name.peek();
+    let new_ingredients = recipe_form.ingredients.peek();
     // TODO: new_ingredient?
-    let new_instructions = recipe_form.instructions.get();
-    let is_err = validate_name(new_name).is_err()
+    let new_instructions = recipe_form.instructions.peek();
+    let is_err = validate_name(&new_name).is_err()
               || new_ingredients.iter().any(|i| validate_ingredient(i).is_err())
-              || validate_instructions(new_instructions).is_err();
+              || validate_instructions(&new_instructions).is_err();
     !is_err
 }
 
@@ -46,14 +46,14 @@ pub fn validate_instructions(instructions: &str) -> Result<(), &'static str> {
     }
 }
 
-pub fn recipe_form<'a, P>(cx: &'a Scoped<'a, P>, initial_recipe: &Recipe) -> (Element<'a>, RecipeForm<'a>) {
-    let name = use_state(&cx, || initial_recipe.title.value().clone());
+pub fn recipe_form(initial_recipe: &Recipe) -> (Element, RecipeForm) {
+    let mut name = use_signal(|| initial_recipe.title.value().clone());
 
-    let ingredients = use_state(&cx, || initial_recipe.ingredients.value().clone());
-    let new_ingredient: &UseState<String> = use_state(&cx, || "".into());
+    let mut ingredients = use_signal(|| initial_recipe.ingredients.value().clone());
+    let mut new_ingredient: Signal<String> = use_signal(|| "".into());
 
-    let instructions = use_state(&cx, || initial_recipe.instructions.value().clone());
-    let instructions_err = validate_instructions(instructions.get());
+    let mut instructions = use_signal(|| initial_recipe.instructions.value().clone());
+    let instructions_err = validate_instructions(&instructions.read());
 
     let form_state = RecipeForm {
         name,
@@ -61,19 +61,19 @@ pub fn recipe_form<'a, P>(cx: &'a Scoped<'a, P>, initial_recipe: &Recipe) -> (El
         instructions,
     };
 
-    let view = cx.render(rsx! (
+    let view = rsx! (
             div {
                 class: "w-full p-3",
                 FieldLabel {
                     label: "Name",
                     id: "recipename",
-                    field: cx.render(rsx!( TextField {
+                    field: rsx!( TextField {
                         placeholder: "Recipe name",
                         id: "recipename",
-                        value: name.get(),
-                        oninput: move |evt: Event<FormData>| name.set(evt.value.clone()),
+                        value: name,
+                        oninput: move |evt: Event<FormData>| name.set(evt.value()),
                         validation_fn: validate_name,
-                    }))
+                    })
                 }
                 // div {
                 //     class: "flex flex-col mb-4",
@@ -82,9 +82,9 @@ pub fn recipe_form<'a, P>(cx: &'a Scoped<'a, P>, initial_recipe: &Recipe) -> (El
                 FieldLabel {
                     label: "Ingredients",
                     id: "recipeingredients-0",
-                    field: cx.render(rsx!(
-                        ingredients.iter().enumerate().map(|(idx,ingredient)| {
-                            cx.render(rsx!(
+                    field: rsx!(
+                        { ingredients.iter().enumerate().map(|(idx,ingredient)| {
+                            rsx!(
                                 div {
                                     class: "mb-1 w-full",
                                     TextField {
@@ -92,27 +92,27 @@ pub fn recipe_form<'a, P>(cx: &'a Scoped<'a, P>, initial_recipe: &Recipe) -> (El
                                         class: "w-full",
                                         id: "recipeingredients-{idx}",
                                         value: ingredient,
-                                        oninput: move |evt: Event<FormData>| ingredients.with_mut(|a| a[idx] = evt.value.clone()),
+                                        oninput: move |evt: Event<FormData>| ingredients.with_mut(|a| a[idx] = evt.value()),
                                         validation_fn: validate_ingredient,
                                     }
                                 }
-                            ))
-                        })
+                            )
+                        }) }
                         TextField {
                             placeholder: "Add ingredient...",
                             id: "recipeingredients-{ingredients.len()}",
-                            value: new_ingredient.get(),
-                            oninput: move |evt: Event<FormData>| new_ingredient.set(evt.value.clone()),
+                            value: new_ingredient,
+                            oninput: move |evt: Event<FormData>| new_ingredient.set(evt.value()),
                             onkeyup: move |evt: Event<KeyboardData>| {
-                                let i = new_ingredient.get();
-                                if evt.key() == Key::Enter && validate_ingredient(i).is_ok() {
-                                    ingredients.with_mut(|a| a.push(i.clone()));
+                                let i = new_ingredient.read().clone();
+                                if evt.key() == Key::Enter && validate_ingredient(&i).is_ok() {
+                                    ingredients.with_mut(|a| a.push(i));
                                     new_ingredient.set("".to_string());
                                 }
-                            }
+                            },
                             validation_fn: validate_ingredient,
                         }
-                    ))
+                    )
                 }
                 div {
                     class: "flex flex-col mb-4",
@@ -130,18 +130,18 @@ pub fn recipe_form<'a, P>(cx: &'a Scoped<'a, P>, initial_recipe: &Recipe) -> (El
                         autocapitalize: "false",
                         spellcheck: "false",
                         placeholder: "Instructions",
-                        oninput: move |evt| instructions.set(evt.value.clone()),
+                        oninput: move |evt| instructions.set(evt.value()),
                         value: "{instructions}"
                     }
-                    instructions_err.err().map(|err| rsx!(
+                    { instructions_err.err().map(|err| rsx!(
                         p {
                             class: "text-red-500 text-sm",
                             "{err}"
                         }
-                    ))
+                    )) }
                 }
             }
-    ));
+    );
     (view, form_state)
 }
 
