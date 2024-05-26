@@ -171,7 +171,7 @@ fn initial_demo_state() -> Cookbook {
         title: lww("Kalbi".into()),
         ingredients: lww(vec!["1oz Soy sauce".into(), "1lb Beef Ribs".into()]),
         instructions: lww("1. Grill meat\n2. Eat\n3. ...".into()),
-        image: vec![],
+        // image: vec![],
     };
     let recipes = TwoPMap::new();
     let recipes = recipes.apply(lt(), TwoPMap::insert(recipe.clone()));
@@ -266,6 +266,15 @@ struct UseStore<OT: OdysseyType, T: CRDT + 'static> {
     handle: Rc<StoreHandle<OT, T>>,
     state: Signal<Option<T>>,
     // peers, connections, etc
+}
+
+impl<OT: OdysseyType + 'static, T: CRDT> Clone for UseStore<OT, T> {
+    fn clone(&self) -> Self {
+        UseStore {
+            handle: self.handle.clone(),
+            state: self.state.clone(),
+        }
+    }
 }
 
 // fn use_store<OT: OdysseyType, T>(handle: StoreHandle<OT, T>) -> UseStore<OT, T> {

@@ -24,12 +24,12 @@ pub type UserId = u32;
 pub type Time = LamportTimestamp<UserId>; // TODO: Switch to hashes for logical time. XXX
 // pub struct RecipeId(Time); // TODO: Newtype wrap this. JP: How do we get this newtype wrapper to work? `Into` instance?
 pub type RecipeId = Time;
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Recipe {
     pub title: LWW<Time, String>,
     pub ingredients: LWW<Time, Vec<String>>, // Sequence<String>,
     pub instructions: LWW<Time, String>, // RGA<String>,
-    pub image: Sequence<OdysseyRef<Image>>,
+    // pub image: Sequence<OdysseyRef<Image>>, // Sequence?
 }
 
 pub enum RecipeOp {
@@ -67,6 +67,8 @@ impl CRDT for Cookbook {
         todo!()
     }
 }
+
+pub type State = Vec<UseStore<CookbookApplication, Cookbook>>;
 
 // use std::marker::PhantomData;
 // #[derive(Props)]

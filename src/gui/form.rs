@@ -21,7 +21,7 @@ pub fn FieldLabel(props: FieldLabelProps) -> Element {
     )
 }
 
-#[derive(Props, Clone)]
+#[derive(PartialEq, Props, Clone)]
 pub struct TextFieldProps {
     id: String,
     class: Option<String>,
@@ -32,13 +32,7 @@ pub struct TextFieldProps {
     validation_fn: for<'b> fn(&'b str) -> Result<(), &'static str>,
 }
 
-impl PartialEq for TextFieldProps {
-    fn eq(&self, other: &Self) -> bool {
-        todo!()
-    }
-}
-
-pub fn TextField<'a>(props: TextFieldProps) -> Element {
+pub fn TextField(props: TextFieldProps) -> Element {
     let err: Result<(), &'static str> = (props.validation_fn)(&props.value);
 
     rsx! (
