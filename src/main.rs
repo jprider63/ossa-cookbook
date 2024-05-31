@@ -4,6 +4,7 @@ use dioxus::prelude::*;
 use futures::StreamExt;
 use odyssey_core::{Odyssey, OdysseyConfig, core::OdysseyType};
 use odyssey_core::network::p2p::{P2PManager, P2PSettings};
+use odyssey_core::store::ecg::{ECGBody, ECGHeader};
 use odyssey_core::storage::memory::MemoryStorage;
 use odyssey_core::store::ecg::v0::TestHeader;
 use odyssey_core::util::Sha256Hash;
@@ -14,6 +15,7 @@ use odyssey_crdt::{
     CRDT,
 };
 use std::borrow::BorrowMut;
+use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::rc::Rc;
@@ -256,14 +258,15 @@ enum CookbookApplication {}
 
 impl OdysseyType for CookbookApplication {
     type StoreId = (); // TODO
-    type ECGHeader = TestHeader; // TODO
+    type ECGHeader<T: CRDT> = TestHeader<T>; // TODO
+    // type ECGHeader = TestHeader; // TODO
 }
 
 
 // TODO: Create `odyssey-dioxus` crate?
 use odyssey_core::core::StoreHandle;
 struct UseStore<OT: OdysseyType, T: CRDT + 'static> {
-    handle: Rc<StoreHandle<OT, T>>,
+    handle: Rc<RefCell<StoreHandle<OT, T>>>,
     state: Signal<Option<T>>,
     // peers, connections, etc
 }
@@ -292,7 +295,7 @@ where
         // let st = recv_st.blocking_recv().unwrap();
 
 
-        let h = Rc::new(h); // JP: Annoyingly required since dioxus requires clone... XXX
+        let h = Rc::new(RefCell::new(h)); // JP: Annoyingly required since dioxus requires clone... XXX
         // let st = Rc::new(st); // JP: Annoyingly required since dioxus requires clone... XXX
         // let recv_st = Rc::new(recv_st); // JP: Annoyingly required since dioxus requires clone... XXX
         let recv_st = CopyValue::new(recv_st); // JP: Annoyingly required since dioxus requires clone... XXX
@@ -330,5 +333,12 @@ impl<OT: OdysseyType, T: CRDT> UseStore<OT, T> {
     // TODO: Apply operations, get current state, etc
     pub fn get_current_state(&self) -> Signal<Option<T>> {
         self.state
+    }
+
+    // TODO: Return OperationId for op?
+    pub fn apply(&mut self, op: T::Op)
+    where <<OT as OdysseyType>::ECGHeader<T> as ECGHeader<T>>::Body: ECGBody<T>,
+    {
+        (*self.handle).borrow_mut().apply(op)
     }
 }

@@ -1,15 +1,15 @@
 pub mod recipe;
 
-use std::ops::Deref;
-
 use dioxus::events::MouseEvent;
 use dioxus_markdown::Markdown;
 use dioxus::prelude::*;
 use dioxus_heroicons::{Icon, solid::Shape};
 // TODO: Fix outline icons.
 
+use odyssey_crdt::map::twopmap::TwoPMapOp;
+
 use crate::gui::layout::recipe::form::{recipe_form, valid_recipe_form};
-use crate::state::{Cookbook, CookbookId, RecipeId, Recipe, RecipeOp, State};
+use crate::state::{Cookbook, CookbookId, CookbookOp, RecipeId, Recipe, RecipeOp, State};
 
 use crate::{CookbookApplication, UseStore};
 
@@ -235,7 +235,7 @@ fn CookbookRecipeNewView(view: Signal<View>, state: Signal<State>, cookbook_id: 
 
 #[component]
 fn CookbookRecipeEditView(view: Signal<View>, state: Signal<State>, cookbook_id: CookbookId, recipe_id: RecipeId) -> Element {
-    let cookbook_store = get_cookbook_store(view, state, cookbook_id)?;
+    let mut cookbook_store = get_cookbook_store(view, state, cookbook_id)?;
     let old_cookbook = cookbook_store.get_current_state().cloned()?;
     let old_recipe = get_recipe(view, &old_cookbook, recipe_id)?;
 
@@ -248,17 +248,14 @@ fn CookbookRecipeEditView(view: Signal<View>, state: Signal<State>, cookbook_id:
             return;
         }
 
-        let mut ops = Vec::new(); // cookbook.create_batch_operations();
+        let mut pending_ops = Vec::new(); // cookbook.create_batch_operations();
 
         // Diff all fields.
-        let new_recipe = old_recipe.clone();
         let new_name = form_state.name.peek();
         let new_ingredients = form_state.ingredients.peek();
         let new_instructions = form_state.instructions.peek();
         if *old_recipe.title.value() != *new_name {
-            // new_recipe.title = new_name.clone();
-
-            ops.push(RecipeOp::Title(new_name.clone()));
+            pending_ops.push(RecipeOp::Title(new_name.clone()));
             // let op = TwoPMapOp::Apply {
             //     key: recipe_id,
             //     operation: RecipeOp::TitleOp {
@@ -269,16 +266,22 @@ fn CookbookRecipeEditView(view: Signal<View>, state: Signal<State>, cookbook_id:
             // let _id = pending_ops.append(op); // Take a closure that gives you the current "time"?
         }
         if *old_recipe.ingredients.value() != *new_ingredients {
-            // new_recipe.ingredients = new_ingredients.clone();
-            ops.push(RecipeOp::Ingredients(new_ingredients.clone()));
+            pending_ops.push(RecipeOp::Ingredients(new_ingredients.clone()));
         }
         if *old_recipe.instructions.value() != *new_instructions {
-            // new_recipe.instructions = new_instructions.clone();
-            ops.push(RecipeOp::Instructions(new_instructions.clone()));
+            pending_ops.push(RecipeOp::Instructions(new_instructions.clone()));
         }
 
-        // // Save updated fields by applying CRDT operations.
-        // cookbook.apply_batch_operations(pending_ops);
+        // Save updated fields by applying CRDT operations.
+        // cookbook_store.apply_batch_operations(pending_ops);
+        for op in pending_ops {
+            // let op = 
+            let op = CookbookOp::Recipes(TwoPMapOp::Apply {
+                key: recipe_id,
+                operation: op,
+            });
+            cookbook_store.apply(op);
+        }
 
         // TODO: Send CRDT operations
         // let mut new_cookbook = old_cookbook.clone();
