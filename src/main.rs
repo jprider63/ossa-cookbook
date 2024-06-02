@@ -335,10 +335,15 @@ impl<OT: OdysseyType, T: CRDT> UseStore<OT, T> {
         self.state
     }
 
-    // TODO: Return OperationId for op?
-    pub fn apply(&mut self, op: T::Op)
+    pub fn apply(&mut self, op: T::Op) -> T::Time
     where <<OT as OdysseyType>::ECGHeader<T> as ECGHeader<T>>::Body: ECGBody<T>,
     {
         (*self.handle).borrow_mut().apply(op)
+    }
+
+    pub fn apply_batch(&mut self, op: Vec<T::Op>) -> impl Iterator<Item=T::Time>
+    where <<OT as OdysseyType>::ECGHeader<T> as ECGHeader<T>>::Body: ECGBody<T>,
+    {
+        (*self.handle).borrow_mut().apply_batch(op)
     }
 }

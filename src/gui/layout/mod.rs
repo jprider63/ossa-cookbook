@@ -274,14 +274,13 @@ fn CookbookRecipeEditView(view: Signal<View>, state: Signal<State>, cookbook_id:
 
         // Save updated fields by applying CRDT operations.
         // cookbook_store.apply_batch_operations(pending_ops);
-        for op in pending_ops {
-            // let op = 
-            let op = CookbookOp::Recipes(TwoPMapOp::Apply {
+        let ops = pending_ops.into_iter().map(|op|
+            CookbookOp::Recipes(TwoPMapOp::Apply {
                 key: recipe_id,
                 operation: op,
-            });
-            cookbook_store.apply(op);
-        }
+            })
+        ).collect();
+        cookbook_store.apply_batch(ops);
 
         // TODO: Send CRDT operations
         // let mut new_cookbook = old_cookbook.clone();
