@@ -160,9 +160,11 @@ fn main() {
 }
 
 fn initial_demo_state() -> Cookbook {
-    fn lt() -> LamportTimestamp<UserId> {
-        let user_id = 0; // TODO
-        LamportTimestamp::current(user_id)
+    fn lt() -> Time {
+        // let user_id = 0; // TODO
+        // LamportTimestamp::current(user_id)
+        // TODO: Initial hash...
+        todo!()
     }
 
     fn lww<A>(x: A) -> LWW<Time, A> {

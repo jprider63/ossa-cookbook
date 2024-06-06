@@ -4,7 +4,9 @@ use odyssey_crdt::{
     register::LWW,
     map::twopmap::TwoPMap,
 };
-use odyssey_crdt::time::LamportTimestamp;
+// use odyssey_crdt::time::LamportTimestamp;
+use odyssey_core::store::ecg::v0::{HeaderId, OperationId};
+use odyssey_core::util::Sha256Hash;
 
 // use im::OrdMap;
 use std::collections::BTreeMap;
@@ -21,7 +23,7 @@ pub type OdysseyRef<A> = A;
 pub type Image = ();
 
 pub type UserId = u32;
-pub type Time = LamportTimestamp<UserId>; // TODO: Switch to hashes for logical time. XXX
+pub type Time = OperationId<HeaderId<Sha256Hash>>;
 // pub struct RecipeId(Time); // TODO: Newtype wrap this. JP: How do we get this newtype wrapper to work? `Into` instance?
 pub type RecipeId = Time;
 #[derive(Clone, PartialEq)]
