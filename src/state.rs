@@ -26,7 +26,7 @@ pub type UserId = u32;
 pub type Time = OperationId<HeaderId<Sha256Hash>>;
 // pub struct RecipeId(Time); // TODO: Newtype wrap this. JP: How do we get this newtype wrapper to work? `Into` instance?
 pub type RecipeId = Time;
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Recipe {
     pub title: LWW<Time, String>,
     pub ingredients: LWW<Time, Vec<String>>, // Sequence<String>,
@@ -34,6 +34,7 @@ pub struct Recipe {
     // pub image: Sequence<OdysseyRef<Image>>, // Sequence?
 }
 
+#[derive(Debug)]
 pub enum RecipeOp {
     Title(<LWW<Time, String> as CRDT>::Op),
     Ingredients(<LWW<Time, Vec<String>> as CRDT>::Op),
@@ -56,6 +57,7 @@ pub struct Cookbook {
     pub recipes: TwoPMap<RecipeId, Recipe>,
 }
 
+#[derive(Debug)]
 pub enum CookbookOp {
     Title(<LWW<Time, String> as CRDT>::Op),
     Recipes(<TwoPMap<RecipeId, Recipe> as CRDT>::Op),

@@ -283,6 +283,7 @@ fn CookbookRecipeEditView(view: Signal<View>, state: Signal<State>, cookbook_id:
                 operation: op,
             })
         ).collect();
+        println!("ops: {:?}", ops);
         cookbook_store.apply_batch(parent_header_ids.clone(), ops);
 
         // TODO: Send CRDT operations

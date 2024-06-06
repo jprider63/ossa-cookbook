@@ -6,7 +6,7 @@ use odyssey_core::{Odyssey, OdysseyConfig, core::OdysseyType};
 use odyssey_core::network::p2p::{P2PManager, P2PSettings};
 use odyssey_core::store::ecg::{self, ECGBody, ECGHeader};
 use odyssey_core::storage::memory::MemoryStorage;
-use odyssey_core::store::ecg::v0::TestHeader;
+use odyssey_core::store::ecg::v0::{OperationId, Header, HeaderId};
 use odyssey_core::util::Sha256Hash;
 use odyssey_crdt::{
     map::twopmap::TwoPMap,
@@ -160,29 +160,40 @@ fn main() {
 }
 
 fn initial_demo_state() -> Cookbook {
-    fn lt() -> Time {
-        // let user_id = 0; // TODO
-        // LamportTimestamp::current(user_id)
-        // TODO: Initial hash...
-        todo!()
-    }
+    struct T (u8);
+    impl T {
+        fn new() -> Self {
+            T(0)
+        }
 
-    fn lww<A>(x: A) -> LWW<Time, A> {
-        LWW::new(lt(), x)
+        fn t(&mut self) -> Time {
+            let x = self.0;
+            self.0 += 1;
+
+            OperationId {
+                header_id: None,
+                operation_position: x,
+            }
+        }
+    }
+    let mut l = T::new();
+
+    fn lww<A>(l: &mut T, x: A) -> LWW<Time, A> {
+        LWW::new(l.t(), x)
     }
 
     let recipe = Recipe {
-        title: lww("Kalbi".into()),
-        ingredients: lww(vec!["1oz Soy sauce".into(), "1lb Beef Ribs".into()]),
-        instructions: lww("1. Grill meat\n2. Eat\n3. ...".into()),
+        title: lww(&mut l, "Kalbi".into()),
+        ingredients: lww(&mut l, vec!["1oz Soy sauce".into(), "1lb Beef Ribs".into()]),
+        instructions: lww(&mut l, "1. Grill meat\n2. Eat\n3. ...".into()),
         // image: vec![],
     };
     let recipes = TwoPMap::new();
-    let recipes = recipes.apply(lt(), TwoPMap::insert(recipe.clone()));
-    let recipes = recipes.apply(lt(), TwoPMap::insert(recipe.clone()));
-    let recipes = recipes.apply(lt(), TwoPMap::insert(recipe.clone()));
-    let recipes = recipes.apply(lt(), TwoPMap::insert(recipe.clone()));
-    let recipes = recipes.apply(lt(), TwoPMap::insert(recipe.clone()));
+    let recipes = recipes.apply(l.t(), TwoPMap::insert(recipe.clone()));
+    let recipes = recipes.apply(l.t(), TwoPMap::insert(recipe.clone()));
+    let recipes = recipes.apply(l.t(), TwoPMap::insert(recipe.clone()));
+    let recipes = recipes.apply(l.t(), TwoPMap::insert(recipe.clone()));
+    let recipes = recipes.apply(l.t(), TwoPMap::insert(recipe.clone()));
     // let recipes = BTreeMap::from([
     //                               (0, recipe.clone()),
     //                               (1, recipe.clone()),
@@ -196,7 +207,7 @@ fn initial_demo_state() -> Cookbook {
     // let book2 = Cookbook {title: lww("My Recipes".into()), recipes: recipes};
     // vec![book1, book2]
     // TODO: Should be a Map CRDT. Include other store metadata like sharing/permissions, peers, etc
-    Cookbook {title: lww("My Recipes".into()), recipes: recipes}
+    Cookbook {title: lww(&mut l, "My Recipes".into()), recipes: recipes}
 }
 
 // #[inline_props]
@@ -260,20 +271,25 @@ enum CookbookApplication {}
 
 impl OdysseyType for CookbookApplication {
     type StoreId = (); // TODO
-    type ECGHeader<T: CRDT> = TestHeader<T>; // TODO
-    // type ECGHeader = TestHeader; // TODO
+    // type ECGHeader<T: CRDT<Time = OperationId<HeaderId<Sha256Hash>>>> = Header<Sha256Hash, T>; // TODO
+    type ECGHeader<T: CRDT<Time = Self::Time>> = Header<Sha256Hash, T>;
+
+    type Time = OperationId<HeaderId<Sha256Hash>>;
+    // type ECGHeader<T> = Header<Sha256Hash, T>
+    //     where T: CRDT<Time = OperationId<HeaderId<Sha256Hash>>>;
+    // type ECGHeader<T> = Header<Sha256Hash, T>;
 }
 
 
 // TODO: Create `odyssey-dioxus` crate?
 use odyssey_core::core::{StateUpdate, StoreHandle};
-struct UseStore<OT: OdysseyType + 'static, T: CRDT + 'static> {
+struct UseStore<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time> + 'static> {
     handle: Rc<RefCell<StoreHandle<OT, T>>>,
     state: Signal<Option<StoreState<OT, T>>>,
     // peers, connections, etc
 }
 
-impl<OT: OdysseyType + 'static, T: CRDT> Clone for UseStore<OT, T> {
+impl<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time>> Clone for UseStore<OT, T> {
     fn clone(&self) -> Self {
         UseStore {
             handle: self.handle.clone(),
@@ -283,12 +299,12 @@ impl<OT: OdysseyType + 'static, T: CRDT> Clone for UseStore<OT, T> {
 }
 
 // #[derive(Clone)]
-struct StoreState<OT: OdysseyType, T: CRDT> {
+struct StoreState<OT: OdysseyType, T: CRDT<Time = OT::Time>> {
     state: T,
     ecg: ecg::State<OT::ECGHeader<T>, T>,
 }
 
-impl<OT: OdysseyType, T: CRDT + Clone> Clone for StoreState<OT, T>
+impl<OT: OdysseyType, T: CRDT<Time = OT::Time> + Clone> Clone for StoreState<OT, T>
 where
     <OT as OdysseyType>::ECGHeader<T>: Clone,
 {
@@ -301,7 +317,7 @@ where
 }
 
 // fn use_store<OT: OdysseyType, T>(handle: StoreHandle<OT, T>) -> UseStore<OT, T> {
-fn use_store<OT: OdysseyType + 'static, T: CRDT, F>(build_store_handle: F) -> UseStore<OT, T>
+fn use_store<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time>, F>(build_store_handle: F) -> UseStore<OT, T>
 where
     F: FnOnce(&Odyssey<CookbookApplication>) -> StoreHandle<OT, T>,
 {
@@ -356,7 +372,7 @@ where
     }
 }
 
-impl<OT: OdysseyType, T: CRDT> UseStore<OT, T> {
+impl<OT: OdysseyType, T: CRDT<Time = OT::Time>> UseStore<OT, T> {
     // TODO: Apply operations, get current state, etc
     pub fn get_current_state(&self) -> Option<T>
     where
