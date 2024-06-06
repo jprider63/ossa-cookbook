@@ -98,7 +98,7 @@ fn get_recipe(mut view: Signal<View>, cookbook: &Cookbook, recipe_id: RecipeId) 
 #[component]
 fn CookbookView(view: Signal<View>, state: Signal<State>, cookbook_id: CookbookId) -> Element {
     let cookbook_store = get_cookbook_store(view, state, cookbook_id)?;
-    let cookbook = cookbook_store.get_current_state().cloned()?;
+    let cookbook = cookbook_store.get_current_state()?;
 
     let pills = cookbook.recipes.iter().map(|(recipe_id, recipe)| { rsx! (
         RecipePill { view: view, cookbook_id: cookbook_id, recipe_id: recipe_id.clone(), recipe: recipe.clone() } // TODO: Can we avoid this clone?
@@ -143,7 +143,7 @@ fn CookbookView(view: Signal<View>, state: Signal<State>, cookbook_id: CookbookI
 #[component]
 fn CookbookRecipeView(view: Signal<View>, state: Signal<State>, cookbook_id: CookbookId, recipe_id: RecipeId) -> Element {
     let cookbook_store = get_cookbook_store(view, state, cookbook_id)?;
-    let cookbook = cookbook_store.get_current_state().cloned()?;
+    let cookbook = cookbook_store.get_current_state()?;
     let recipe = get_recipe(view, &cookbook, recipe_id)?;
 
     rsx! (
@@ -221,7 +221,7 @@ fn CookbookRecipeView(view: Signal<View>, state: Signal<State>, cookbook_id: Coo
 #[component]
 fn CookbookRecipeNewView(view: Signal<View>, state: Signal<State>, cookbook_id: CookbookId) -> Element {
     let cookbook_store = get_cookbook_store(view, state, cookbook_id)?;
-    let cookbook = cookbook_store.get_current_state().cloned()?;
+    let cookbook = cookbook_store.get_current_state()?;
     rsx!(
         Sidebar { view: view, state: state }
         div {
@@ -236,7 +236,10 @@ fn CookbookRecipeNewView(view: Signal<View>, state: Signal<State>, cookbook_id: 
 #[component]
 fn CookbookRecipeEditView(view: Signal<View>, state: Signal<State>, cookbook_id: CookbookId, recipe_id: RecipeId) -> Element {
     let mut cookbook_store = get_cookbook_store(view, state, cookbook_id)?;
-    let old_cookbook = cookbook_store.get_current_state().cloned()?;
+    let cookbook_store_state = cookbook_store.get_current_store_state()?;
+    let old_cookbook = cookbook_store_state.state;
+    let parent_header_ids = cookbook_store_state.ecg.tips().clone();
+
     let old_recipe = get_recipe(view, &old_cookbook, recipe_id)?;
 
     let old_recipe = old_recipe.clone();
@@ -280,7 +283,7 @@ fn CookbookRecipeEditView(view: Signal<View>, state: Signal<State>, cookbook_id:
                 operation: op,
             })
         ).collect();
-        cookbook_store.apply_batch(ops);
+        cookbook_store.apply_batch(parent_header_ids.clone(), ops);
 
         // TODO: Send CRDT operations
         // let mut new_cookbook = old_cookbook.clone();
@@ -363,7 +366,7 @@ fn Sidebar(view: Signal<View>, state: Signal<Vec<UseStore<CookbookApplication, C
     let cookbooks = state.read();
     let cookbooks = cookbooks.iter().filter_map(|cookbook_store|
 
-            cookbook_store.get_current_state().cloned()
+            cookbook_store.get_current_state()
         ).enumerate().map(|(i,cookbook)| {
             rsx!(
                 SidebarItem { title: cookbook.title.value(), icon: Shape::BookOpen, selected: is_cookbook_selected(&view.read(), i), onclick: move |_e| {view.set(View::Cookbook(i))} }

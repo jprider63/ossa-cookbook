@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 use futures::StreamExt;
 use odyssey_core::{Odyssey, OdysseyConfig, core::OdysseyType};
 use odyssey_core::network::p2p::{P2PManager, P2PSettings};
-use odyssey_core::store::ecg::{ECGBody, ECGHeader};
+use odyssey_core::store::ecg::{self, ECGBody, ECGHeader};
 use odyssey_core::storage::memory::MemoryStorage;
 use odyssey_core::store::ecg::v0::TestHeader;
 use odyssey_core::util::Sha256Hash;
@@ -16,7 +16,7 @@ use odyssey_crdt::{
 };
 use std::borrow::BorrowMut;
 use std::cell::RefCell;
-use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::rc::Rc;
 
@@ -264,10 +264,10 @@ impl OdysseyType for CookbookApplication {
 
 
 // TODO: Create `odyssey-dioxus` crate?
-use odyssey_core::core::StoreHandle;
-struct UseStore<OT: OdysseyType, T: CRDT + 'static> {
+use odyssey_core::core::{StateUpdate, StoreHandle};
+struct UseStore<OT: OdysseyType + 'static, T: CRDT + 'static> {
     handle: Rc<RefCell<StoreHandle<OT, T>>>,
-    state: Signal<Option<T>>,
+    state: Signal<Option<StoreState<OT, T>>>,
     // peers, connections, etc
 }
 
@@ -276,6 +276,24 @@ impl<OT: OdysseyType + 'static, T: CRDT> Clone for UseStore<OT, T> {
         UseStore {
             handle: self.handle.clone(),
             state: self.state.clone(),
+        }
+    }
+}
+
+// #[derive(Clone)]
+struct StoreState<OT: OdysseyType, T: CRDT> {
+    state: T,
+    ecg: ecg::State<OT::ECGHeader<T>, T>,
+}
+
+impl<OT: OdysseyType, T: CRDT + Clone> Clone for StoreState<OT, T>
+where
+    <OT as OdysseyType>::ECGHeader<T>: Clone,
+{
+    fn clone(&self) -> Self {
+        StoreState {
+            state: self.state.clone(),
+            ecg: self.ecg.clone(),
         }
     }
 }
@@ -317,10 +335,17 @@ where
     //     // let mut recv_state = Rc::try_unwrap(recv_state).unwrap();
     //     // let mut recv_state = recv_state.clone();
     //     // let recv_state = Rc::get_mut(&mut recv_state).unwrap();
-        while let Some(st) = recv_state.write().recv().await {
-            // *state.write() = st;
-            println!("Received state!");
-            state.set(Some(st));
+        while let Some(msg) = recv_state.write().recv().await {
+            match msg {
+                StateUpdate::Snapshot { snapshot, ecg_state } => {
+                    println!("Received state!");
+                    let s = StoreState {
+                        state: snapshot,
+                        ecg: ecg_state,
+                    };
+                    state.set(Some(s));
+                }
+            }
         }
     });
     UseStore {
@@ -331,19 +356,31 @@ where
 
 impl<OT: OdysseyType, T: CRDT> UseStore<OT, T> {
     // TODO: Apply operations, get current state, etc
-    pub fn get_current_state(&self) -> Signal<Option<T>> {
-        self.state
+    pub fn get_current_state(&self) -> Option<T>
+    where
+        T: Clone,
+        <OT as OdysseyType>::ECGHeader<T>: Clone,
+    {
+        self.state.cloned().map(|s| s.state)
     }
 
-    pub fn apply(&mut self, op: T::Op) -> T::Time
-    where <<OT as OdysseyType>::ECGHeader<T> as ECGHeader<T>>::Body: ECGBody<T>,
+    pub fn get_current_store_state(&self) -> Option<StoreState<OT, T>>
+    where
+        T: Clone,
+        <OT as OdysseyType>::ECGHeader<T>: Clone,
     {
-        (*self.handle).borrow_mut().apply(op)
+        self.state.cloned()
     }
 
-    pub fn apply_batch(&mut self, op: Vec<T::Op>) -> impl Iterator<Item=T::Time>
+    pub fn apply(&mut self, parents: BTreeSet<<<OT as OdysseyType>::ECGHeader<T> as ECGHeader<T>>::HeaderId>, op: T::Op) -> T::Time
     where <<OT as OdysseyType>::ECGHeader<T> as ECGHeader<T>>::Body: ECGBody<T>,
     {
-        (*self.handle).borrow_mut().apply_batch(op)
+        (*self.handle).borrow_mut().apply(parents, op)
+    }
+
+    pub fn apply_batch(&mut self, parents: BTreeSet<<<OT as OdysseyType>::ECGHeader<T> as ECGHeader<T>>::HeaderId>, op: Vec<T::Op>) -> Vec<T::Time>
+    where <<OT as OdysseyType>::ECGHeader<T> as ECGHeader<T>>::Body: ECGBody<T>,
+    {
+        (*self.handle).borrow_mut().apply_batch(parents, op)
     }
 }
