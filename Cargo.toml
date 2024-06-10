@@ -17,6 +17,7 @@ im = "15.1.0"
 manganis = "*"
 odyssey-core = {path = "/Users/james/Documents/Projects/odyssey/odyssey-core"}
 odyssey-crdt = {path = "/Users/james/Documents/Projects/odyssey/odyssey-crdt"}
+serde = "*"
 tauri = "*"
 
 # tmp?

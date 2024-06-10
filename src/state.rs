@@ -10,6 +10,7 @@ use odyssey_core::util::Sha256Hash;
 
 // use im::OrdMap;
 use std::collections::BTreeMap;
+use serde::{Deserialize, Serialize};
 
 use dioxus::prelude::Props;
 use crate::{CookbookApplication, UseStore};
@@ -26,7 +27,7 @@ pub type UserId = u32;
 pub type Time = OperationId<HeaderId<Sha256Hash>>;
 // pub struct RecipeId(Time); // TODO: Newtype wrap this. JP: How do we get this newtype wrapper to work? `Into` instance?
 pub type RecipeId = Time;
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Recipe {
     pub title: LWW<Time, String>,
     pub ingredients: LWW<Time, Vec<String>>, // Sequence<String>,
@@ -34,7 +35,7 @@ pub struct Recipe {
     // pub image: Sequence<OdysseyRef<Image>>, // Sequence?
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum RecipeOp {
     Title(<LWW<Time, String> as CRDT>::Op),
     Ingredients(<LWW<Time, Vec<String>> as CRDT>::Op),
@@ -57,7 +58,8 @@ pub struct Cookbook {
     pub recipes: TwoPMap<RecipeId, Recipe>,
 }
 
-#[derive(Debug)]
+// TODO: Define the CBOR for this properly
+#[derive(Debug, Serialize, Deserialize)]
 pub enum CookbookOp {
     Title(<LWW<Time, String> as CRDT>::Op),
     Recipes(<TwoPMap<RecipeId, Recipe> as CRDT>::Op),
