@@ -14,6 +14,7 @@ use odyssey_crdt::{
     time::LamportTimestamp,
     CRDT,
 };
+use serde::Serialize;
 use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::collections::BTreeSet;
@@ -272,7 +273,7 @@ enum CookbookApplication {}
 impl OdysseyType for CookbookApplication {
     type StoreId = (); // TODO
     // type ECGHeader<T: CRDT<Time = OperationId<HeaderId<Sha256Hash>>>> = Header<Sha256Hash, T>; // TODO
-    type ECGHeader<T: CRDT<Time = Self::Time>> = Header<Sha256Hash, T>;
+    type ECGHeader<T: CRDT<Time = Self::Time, Op: Serialize>> = Header<Sha256Hash, T>;
 
     type Time = OperationId<HeaderId<Sha256Hash>>;
     // type ECGHeader<T> = Header<Sha256Hash, T>
@@ -283,13 +284,13 @@ impl OdysseyType for CookbookApplication {
 
 // TODO: Create `odyssey-dioxus` crate?
 use odyssey_core::core::{StateUpdate, StoreHandle};
-struct UseStore<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time> + 'static> {
+struct UseStore<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize> + 'static> {
     handle: Rc<RefCell<StoreHandle<OT, T>>>,
     state: Signal<Option<StoreState<OT, T>>>,
     // peers, connections, etc
 }
 
-impl<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time>> Clone for UseStore<OT, T> {
+impl<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize>> Clone for UseStore<OT, T> {
     fn clone(&self) -> Self {
         UseStore {
             handle: self.handle.clone(),
@@ -299,12 +300,12 @@ impl<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time>> Clone for UseStore<OT,
 }
 
 // #[derive(Clone)]
-struct StoreState<OT: OdysseyType, T: CRDT<Time = OT::Time>> {
+struct StoreState<OT: OdysseyType, T: CRDT<Time = OT::Time, Op: Serialize>> {
     state: T,
     ecg: ecg::State<OT::ECGHeader<T>, T>,
 }
 
-impl<OT: OdysseyType, T: CRDT<Time = OT::Time> + Clone> Clone for StoreState<OT, T>
+impl<OT: OdysseyType, T: CRDT<Time = OT::Time, Op: Serialize> + Clone> Clone for StoreState<OT, T>
 where
     <OT as OdysseyType>::ECGHeader<T>: Clone,
 {
@@ -317,7 +318,7 @@ where
 }
 
 // fn use_store<OT: OdysseyType, T>(handle: StoreHandle<OT, T>) -> UseStore<OT, T> {
-fn use_store<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time>, F>(build_store_handle: F) -> UseStore<OT, T>
+fn use_store<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize>, F>(build_store_handle: F) -> UseStore<OT, T>
 where
     F: FnOnce(&Odyssey<CookbookApplication>) -> StoreHandle<OT, T>,
 {
@@ -372,7 +373,10 @@ where
     }
 }
 
-impl<OT: OdysseyType, T: CRDT<Time = OT::Time>> UseStore<OT, T> {
+impl<OT: OdysseyType, T: CRDT<Time = OT::Time>> UseStore<OT, T>
+where
+    T::Op: Serialize,
+{
     // TODO: Apply operations, get current state, etc
     pub fn get_current_state(&self) -> Option<T>
     where
