@@ -35,6 +35,8 @@ pub struct Recipe {
     // pub image: Sequence<OdysseyRef<Image>>, // Sequence?
 }
 
+// TODO: Define the CBOR for this properly
+// TODO: Derive this automatically. (use `heck` for case conversion) XXX
 #[derive(Debug, Serialize, Deserialize)]
 pub enum RecipeOp {
     Title(<LWW<Time, String> as CRDT>::Op),
@@ -42,12 +44,26 @@ pub enum RecipeOp {
     Instructions(<LWW<Time, String> as CRDT>::Op),
 }
 
+// TODO: Derive this automatically. (use `heck` for case conversion) XXX
 impl CRDT for Recipe {
     type Op = RecipeOp;
     type Time = Time;
 
     fn apply(self, op_time: Time, op: Self::Op) -> Self {
-        todo!()
+        match op {
+            RecipeOp::Title(t) => Recipe {
+                title: self.title.apply(op_time, t),
+                ..self
+            },
+            RecipeOp::Ingredients(i) => Recipe {
+                ingredients: self.ingredients.apply(op_time, i),
+                ..self
+            },
+            RecipeOp::Instructions(i) => Recipe {
+                instructions: self.instructions.apply(op_time, i),
+                ..self
+            },
+        }
     }
 }
 
@@ -59,18 +75,29 @@ pub struct Cookbook {
 }
 
 // TODO: Define the CBOR for this properly
+// TODO: Derive this automatically. (use `heck` for case conversion) XXX
 #[derive(Debug, Serialize, Deserialize)]
 pub enum CookbookOp {
     Title(<LWW<Time, String> as CRDT>::Op),
     Recipes(<TwoPMap<RecipeId, Recipe> as CRDT>::Op),
 }
 
+// TODO: Derive this automatically. (use `heck` for case conversion) XXX
 impl CRDT for Cookbook {
     type Op = CookbookOp;
     type Time = Time;
 
     fn apply(self, op_time: Time, op: Self::Op) -> Self {
-        todo!()
+        match op {
+            CookbookOp::Title(t) => Cookbook {
+                title: self.title.apply(op_time, t),
+                ..self
+            },
+            CookbookOp::Recipes(rs) => Cookbook {
+                recipes: self.recipes.apply(op_time, rs),
+                ..self
+            }
+        }
     }
 }
 

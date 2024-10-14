@@ -74,6 +74,9 @@ const app_name: &str = "Odyssey Cookbook";
 fn main() {
     let args = cli::Arguments::parse();
 
+    // use typeable::Typeable;
+    // println!("typeid: {}", Header::<Sha256Hash, ()>::type_ident());
+
     let port = args.port.unwrap_or(8080);
     let odyssey_config = OdysseyConfig {
         // address: SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), port),
