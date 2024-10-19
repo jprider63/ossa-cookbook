@@ -259,14 +259,6 @@ fn CookbookRecipeEditView(view: Signal<View>, state: Signal<State>, cookbook_id:
         let new_instructions = form_state.instructions.peek();
         if *old_recipe.title.value() != *new_name {
             pending_ops.push(RecipeOp::Title(new_name.clone()));
-            // let op = TwoPMapOp::Apply {
-            //     key: recipe_id,
-            //     operation: RecipeOp::TitleOp {
-            //         time: pending_ops.time(),
-            //         value: new_name,
-            //     },
-            // };
-            // let _id = pending_ops.append(op); // Take a closure that gives you the current "time"?
         }
         if *old_recipe.ingredients.value() != *new_ingredients {
             pending_ops.push(RecipeOp::Ingredients(new_ingredients.clone()));

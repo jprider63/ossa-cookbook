@@ -2,6 +2,7 @@ use clap::Parser;
 use dioxus::prelude::*;
 // use dioxus_desktop::tao::menu::{AboutMetadata, MenuBar, MenuItem, MenuItemAttributes};
 use futures::StreamExt;
+use odyssey_core::network::protocol::ecg_sync;
 use odyssey_core::{Odyssey, OdysseyConfig, core::OdysseyType};
 use odyssey_core::network::p2p::{P2PManager, P2PSettings};
 use odyssey_core::store::ecg::{self, ECGBody, ECGHeader};
@@ -174,10 +175,7 @@ fn initial_demo_state() -> Cookbook {
             let x = self.0;
             self.0 += 1;
 
-            OperationId {
-                header_id: None,
-                operation_position: x,
-            }
+            OperationId::new(None, x)
         }
     }
     let mut l = T::new();
@@ -192,12 +190,14 @@ fn initial_demo_state() -> Cookbook {
         instructions: lww(&mut l, "1. Grill meat\n2. Eat\n3. ...".into()),
         // image: vec![],
     };
+    let ecg_state = ecg::State::new();
     let recipes = TwoPMap::new();
-    let recipes = recipes.apply(l.t(), TwoPMap::insert(recipe.clone()));
-    let recipes = recipes.apply(l.t(), TwoPMap::insert(recipe.clone()));
-    let recipes = recipes.apply(l.t(), TwoPMap::insert(recipe.clone()));
-    let recipes = recipes.apply(l.t(), TwoPMap::insert(recipe.clone()));
-    let recipes = recipes.apply(l.t(), TwoPMap::insert(recipe.clone()));
+    let recipes = recipes.apply(&ecg_state, l.t(), TwoPMap::insert(recipe.clone()));
+    let recipes = recipes.apply(&ecg_state, l.t(), TwoPMap::insert(recipe.clone()));
+    let recipes = recipes.apply(&ecg_state, l.t(), TwoPMap::insert(recipe.clone()));
+    let recipes = recipes.apply(&ecg_state, l.t(), TwoPMap::insert(recipe.clone()));
+    let recipes = recipes.apply(&ecg_state, l.t(), TwoPMap::insert(recipe.clone()));
+
     // let recipes = BTreeMap::from([
     //                               (0, recipe.clone()),
     //                               (1, recipe.clone()),

@@ -24,6 +24,7 @@ pub type OdysseyRef<A> = A;
 pub type Image = ();
 
 pub type UserId = u32;
+// pub type Time = OperationId<Header<Sha256Hash, impl CRDT>, impl CRDT>;
 pub type Time = OperationId<HeaderId<Sha256Hash>>;
 // pub struct RecipeId(Time); // TODO: Newtype wrap this. JP: How do we get this newtype wrapper to work? `Into` instance?
 pub type RecipeId = Time;
@@ -49,18 +50,18 @@ impl CRDT for Recipe {
     type Op = RecipeOp;
     type Time = Time;
 
-    fn apply(self, op_time: Time, op: Self::Op) -> Self {
+    fn apply(self, st: &Time::State, op_time: Time, op: Self::Op) -> Self {
         match op {
             RecipeOp::Title(t) => Recipe {
-                title: self.title.apply(op_time, t),
+                title: self.title.apply(st, op_time, t),
                 ..self
             },
             RecipeOp::Ingredients(i) => Recipe {
-                ingredients: self.ingredients.apply(op_time, i),
+                ingredients: self.ingredients.apply(st, op_time, i),
                 ..self
             },
             RecipeOp::Instructions(i) => Recipe {
-                instructions: self.instructions.apply(op_time, i),
+                instructions: self.instructions.apply(st, op_time, i),
                 ..self
             },
         }
@@ -68,7 +69,7 @@ impl CRDT for Recipe {
 }
 
 pub type CookbookId = usize; // TODO: Newtype wrap this.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Cookbook {
     pub title: LWW<Time, String>,
     pub recipes: TwoPMap<RecipeId, Recipe>,
@@ -87,7 +88,7 @@ impl CRDT for Cookbook {
     type Op = CookbookOp;
     type Time = Time;
 
-    fn apply(self, op_time: Time, op: Self::Op) -> Self {
+    fn apply(self, st: &Time::State, op_time: Time, op: Self::Op) -> Self {
         match op {
             CookbookOp::Title(t) => Cookbook {
                 title: self.title.apply(op_time, t),
