@@ -3,6 +3,7 @@ use odyssey_crdt::{
     CRDT,
     register::LWW,
     map::twopmap::TwoPMap,
+    time::CausalState,
 };
 // use odyssey_crdt::time::LamportTimestamp;
 use odyssey_core::store::ecg::v0::{HeaderId, OperationId};
@@ -50,7 +51,7 @@ impl CRDT for Recipe {
     type Op = RecipeOp;
     type Time = Time;
 
-    fn apply(self, st: &Time::State, op_time: Time, op: Self::Op) -> Self {
+    fn apply<CS: CausalState<Time = Self::Time>>(self, st: &CS, op_time: Time, op: Self::Op) -> Self {
         match op {
             RecipeOp::Title(t) => Recipe {
                 title: self.title.apply(st, op_time, t),
@@ -88,14 +89,14 @@ impl CRDT for Cookbook {
     type Op = CookbookOp;
     type Time = Time;
 
-    fn apply(self, st: &Time::State, op_time: Time, op: Self::Op) -> Self {
+    fn apply<CS: CausalState<Time = Self::Time>>(self, st: &CS, op_time: Time, op: Self::Op) -> Self {
         match op {
             CookbookOp::Title(t) => Cookbook {
-                title: self.title.apply(op_time, t),
+                title: self.title.apply(st, op_time, t),
                 ..self
             },
             CookbookOp::Recipes(rs) => Cookbook {
-                recipes: self.recipes.apply(op_time, rs),
+                recipes: self.recipes.apply(st, op_time, rs),
                 ..self
             }
         }

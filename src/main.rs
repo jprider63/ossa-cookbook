@@ -190,7 +190,9 @@ fn initial_demo_state() -> Cookbook {
         instructions: lww(&mut l, "1. Grill meat\n2. Eat\n3. ...".into()),
         // image: vec![],
     };
-    let ecg_state = ecg::State::new();
+    // TODO: We should receive this from create_store?
+    let ecg_state: ecg::State<Header<Sha256Hash, LWW<Time,()>>, LWW<Time,()>> = ecg::State::new();
+
     let recipes = TwoPMap::new();
     let recipes = recipes.apply(&ecg_state, l.t(), TwoPMap::insert(recipe.clone()));
     let recipes = recipes.apply(&ecg_state, l.t(), TwoPMap::insert(recipe.clone()));
@@ -275,13 +277,21 @@ enum CookbookApplication {}
 
 impl OdysseyType for CookbookApplication {
     type StoreId = (); // TODO
-    // type ECGHeader<T: CRDT<Time = OperationId<HeaderId<Sha256Hash>>>> = Header<Sha256Hash, T>; // TODO
+    // type ECGHeader<T: CRDT<Op: Serialize, Time = OperationId<HeaderId<Sha256Hash>>>> = Header<Sha256Hash, T>;
+    // type ECGHeader<T: CRDT<Time = OperationId<HeaderId<Sha256Hash>>>> = Header<Sha256Hash, T>;
     type ECGHeader<T: CRDT<Time = Self::Time, Op: Serialize>> = Header<Sha256Hash, T>;
+    // type ECGHeader<T: CRDT<Op: Serialize>> = Header<Sha256Hash, T>;
 
     type Time = OperationId<HeaderId<Sha256Hash>>;
+
+    type CausalState<T: CRDT<Time = Self::Time, Op: Serialize>> = ecg::State<Self::ECGHeader<T>, T>;
     // type ECGHeader<T> = Header<Sha256Hash, T>
     //     where T: CRDT<Time = OperationId<HeaderId<Sha256Hash>>>;
     // type ECGHeader<T> = Header<Sha256Hash, T>;
+
+    fn to_causal_state<'a, T: CRDT<Time = Self::Time, Op: Serialize>>(st: &'a ecg::State<Self::ECGHeader<T>, T>) -> &'a Self::CausalState<T> {
+        st
+    }
 }
 
 
