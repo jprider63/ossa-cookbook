@@ -2,19 +2,14 @@ use clap::Parser;
 use dioxus::prelude::*;
 // use dioxus_desktop::tao::menu::{AboutMetadata, MenuBar, MenuItem, MenuItemAttributes};
 use futures::StreamExt;
-use odyssey_core::network::protocol::ecg_sync;
-use odyssey_core::{Odyssey, OdysseyConfig, core::OdysseyType};
 use odyssey_core::network::p2p::{P2PManager, P2PSettings};
-use odyssey_core::store::ecg::{self, ECGBody, ECGHeader};
+use odyssey_core::network::protocol::ecg_sync;
 use odyssey_core::storage::memory::MemoryStorage;
-use odyssey_core::store::ecg::v0::{OperationId, Header, HeaderId};
+use odyssey_core::store::ecg::v0::{Header, HeaderId, OperationId};
+use odyssey_core::store::ecg::{self, ECGBody, ECGHeader};
 use odyssey_core::util::Sha256Hash;
-use odyssey_crdt::{
-    map::twopmap::TwoPMap,
-    register::LWW,
-    time::LamportTimestamp,
-    CRDT,
-};
+use odyssey_core::{core::OdysseyType, Odyssey, OdysseyConfig};
+use odyssey_crdt::{map::twopmap::TwoPMap, register::LWW, time::LamportTimestamp, CRDT};
 use serde::Serialize;
 use std::borrow::BorrowMut;
 use std::cell::RefCell;
@@ -101,7 +96,6 @@ fn main() {
     // let init_st = initial_demo_state();
     // let recipe_store = odyssey.create_store(init_st, MemoryStorage::new());
 
-
     // if let Some(port) = args.port {
     //     let odyssey_manager = P2PManager::initialize::<Sha256Hash,Sha256Hash>(P2PSettings {address: SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), port)});
     // } else {
@@ -153,19 +147,23 @@ fn main() {
     // menu.add_submenu( "Help", true, help_menu);
 
     let w = dioxus_desktop::WindowBuilder::new().with_title(app_name);
-                                                // .with_menu(menu); // TODO XXX
+    // .with_menu(menu); // TODO XXX
     let c = dioxus_desktop::Config::new().with_window(w);
     // let odyssey_prop = OdysseyProp::new(odyssey);
     // dioxus_desktop::launch_with_props(app, odyssey_prop, c);
-    dioxus_desktop::launch::launch(app, vec![Box::new(move || {
-        let odyssey: Odyssey<CookbookApplication> = Odyssey::start(odyssey_config);
-        let odyssey_prop = OdysseyProp::new(odyssey);
-        Box::new(odyssey_prop)
-    })], c);
+    dioxus_desktop::launch::launch(
+        app,
+        vec![Box::new(move || {
+            let odyssey: Odyssey<CookbookApplication> = Odyssey::start(odyssey_config);
+            let odyssey_prop = OdysseyProp::new(odyssey);
+            Box::new(odyssey_prop)
+        })],
+        c,
+    );
 }
 
 fn initial_demo_state() -> Cookbook {
-    struct T (u8);
+    struct T(u8);
     impl T {
         fn new() -> Self {
             T(0)
@@ -191,7 +189,7 @@ fn initial_demo_state() -> Cookbook {
         // image: vec![],
     };
     // TODO: We should receive this from create_store?
-    let ecg_state: ecg::State<Header<Sha256Hash, LWW<Time,()>>, LWW<Time,()>> = ecg::State::new();
+    let ecg_state: ecg::State<Header<Sha256Hash, LWW<Time, ()>>, LWW<Time, ()>> = ecg::State::new();
 
     let recipes = TwoPMap::new();
     let recipes = recipes.apply(&ecg_state, l.t(), TwoPMap::insert(recipe.clone()));
@@ -213,7 +211,10 @@ fn initial_demo_state() -> Cookbook {
     // let book2 = Cookbook {title: lww("My Recipes".into()), recipes: recipes};
     // vec![book1, book2]
     // TODO: Should be a Map CRDT. Include other store metadata like sharing/permissions, peers, etc
-    Cookbook {title: lww(&mut l, "My Recipes".into()), recipes: recipes}
+    Cookbook {
+        title: lww(&mut l, "My Recipes".into()),
+        recipes: recipes,
+    }
 }
 
 // #[inline_props]
@@ -277,8 +278,8 @@ enum CookbookApplication {}
 
 impl OdysseyType for CookbookApplication {
     type StoreId = (); // TODO
-    // type ECGHeader<T: CRDT<Op: Serialize, Time = OperationId<HeaderId<Sha256Hash>>>> = Header<Sha256Hash, T>;
-    // type ECGHeader<T: CRDT<Time = OperationId<HeaderId<Sha256Hash>>>> = Header<Sha256Hash, T>;
+                       // type ECGHeader<T: CRDT<Op: Serialize, Time = OperationId<HeaderId<Sha256Hash>>>> = Header<Sha256Hash, T>;
+                       // type ECGHeader<T: CRDT<Time = OperationId<HeaderId<Sha256Hash>>>> = Header<Sha256Hash, T>;
     type ECGHeader<T: CRDT<Time = Self::Time, Op: Serialize>> = Header<Sha256Hash, T>;
     // type ECGHeader<T: CRDT<Op: Serialize>> = Header<Sha256Hash, T>;
 
@@ -289,11 +290,12 @@ impl OdysseyType for CookbookApplication {
     //     where T: CRDT<Time = OperationId<HeaderId<Sha256Hash>>>;
     // type ECGHeader<T> = Header<Sha256Hash, T>;
 
-    fn to_causal_state<'a, T: CRDT<Time = Self::Time, Op: Serialize>>(st: &'a ecg::State<Self::ECGHeader<T>, T>) -> &'a Self::CausalState<T> {
+    fn to_causal_state<'a, T: CRDT<Time = Self::Time, Op: Serialize>>(
+        st: &'a ecg::State<Self::ECGHeader<T>, T>,
+    ) -> &'a Self::CausalState<T> {
         st
     }
 }
-
 
 // TODO: Create `odyssey-dioxus` crate?
 use odyssey_core::core::{StateUpdate, StoreHandle};
@@ -331,7 +333,9 @@ where
 }
 
 // fn use_store<OT: OdysseyType, T>(handle: StoreHandle<OT, T>) -> UseStore<OT, T> {
-fn use_store<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize>, F>(build_store_handle: F) -> UseStore<OT, T>
+fn use_store<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize>, F>(
+    build_store_handle: F,
+) -> UseStore<OT, T>
 where
     F: FnOnce(&Odyssey<CookbookApplication>) -> StoreHandle<OT, T>,
 {
@@ -344,16 +348,13 @@ where
         // // Get current state.
         // let st = recv_st.blocking_recv().unwrap();
 
-
         let h = Rc::new(RefCell::new(h)); // JP: Annoyingly required since dioxus requires clone... XXX
-        // let st = Rc::new(st); // JP: Annoyingly required since dioxus requires clone... XXX
-        // let recv_st = Rc::new(recv_st); // JP: Annoyingly required since dioxus requires clone... XXX
+                                          // let st = Rc::new(st); // JP: Annoyingly required since dioxus requires clone... XXX
+                                          // let recv_st = Rc::new(recv_st); // JP: Annoyingly required since dioxus requires clone... XXX
         let recv_st = CopyValue::new(recv_st); // JP: Annoyingly required since dioxus requires clone... XXX
         (h, recv_st)
     });
-    let mut state = use_signal(|| {
-        None
-    });
+    let mut state = use_signal(|| None);
     // let mut state: Signal<T> = use_signal(|| {
     //     // let recv_state = Rc::get_mut(&mut recv_state).unwrap();
     //     let init_st = recv_state.write().blocking_recv().unwrap();
@@ -363,13 +364,16 @@ where
     // let handle2 = handle.clone();
     // TODO...
     use_future(move || async move {
-    //     let mut recv_state = handle2.subscribe_to_state();
-    //     // let mut recv_state = Rc::try_unwrap(recv_state).unwrap();
-    //     // let mut recv_state = recv_state.clone();
-    //     // let recv_state = Rc::get_mut(&mut recv_state).unwrap();
+        //     let mut recv_state = handle2.subscribe_to_state();
+        //     // let mut recv_state = Rc::try_unwrap(recv_state).unwrap();
+        //     // let mut recv_state = recv_state.clone();
+        //     // let recv_state = Rc::get_mut(&mut recv_state).unwrap();
         while let Some(msg) = recv_state.write().recv().await {
             match msg {
-                StateUpdate::Snapshot { snapshot, ecg_state } => {
+                StateUpdate::Snapshot {
+                    snapshot,
+                    ecg_state,
+                } => {
                     println!("Received state!");
                     let s = StoreState {
                         state: snapshot,
@@ -380,10 +384,7 @@ where
             }
         }
     });
-    UseStore {
-        handle,
-        state,
-    }
+    UseStore { handle, state }
 }
 
 impl<OT: OdysseyType, T: CRDT<Time = OT::Time>> UseStore<OT, T>
@@ -407,14 +408,24 @@ where
         self.state.cloned()
     }
 
-    pub fn apply(&mut self, parents: BTreeSet<<<OT as OdysseyType>::ECGHeader<T> as ECGHeader<T>>::HeaderId>, op: T::Op) -> T::Time
-    where <<OT as OdysseyType>::ECGHeader<T> as ECGHeader<T>>::Body: ECGBody<T>,
+    pub fn apply(
+        &mut self,
+        parents: BTreeSet<<<OT as OdysseyType>::ECGHeader<T> as ECGHeader<T>>::HeaderId>,
+        op: T::Op,
+    ) -> T::Time
+    where
+        <<OT as OdysseyType>::ECGHeader<T> as ECGHeader<T>>::Body: ECGBody<T>,
     {
         (*self.handle).borrow_mut().apply(parents, op)
     }
 
-    pub fn apply_batch(&mut self, parents: BTreeSet<<<OT as OdysseyType>::ECGHeader<T> as ECGHeader<T>>::HeaderId>, op: Vec<T::Op>) -> Vec<T::Time>
-    where <<OT as OdysseyType>::ECGHeader<T> as ECGHeader<T>>::Body: ECGBody<T>,
+    pub fn apply_batch(
+        &mut self,
+        parents: BTreeSet<<<OT as OdysseyType>::ECGHeader<T> as ECGHeader<T>>::HeaderId>,
+        op: Vec<T::Op>,
+    ) -> Vec<T::Time>
+    where
+        <<OT as OdysseyType>::ECGHeader<T> as ECGHeader<T>>::Body: ECGBody<T>,
     {
         (*self.handle).borrow_mut().apply_batch(parents, op)
     }

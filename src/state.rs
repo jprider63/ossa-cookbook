@@ -1,24 +1,18 @@
-
-use odyssey_crdt::{
-    CRDT,
-    register::LWW,
-    map::twopmap::TwoPMap,
-    time::CausalState,
-};
+use odyssey_crdt::{map::twopmap::TwoPMap, register::LWW, time::CausalState, CRDT};
 // use odyssey_crdt::time::LamportTimestamp;
 use odyssey_core::store::ecg::v0::{HeaderId, OperationId};
 use odyssey_core::util::Sha256Hash;
 
 // use im::OrdMap;
-use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
-use dioxus::prelude::Props;
 use crate::{CookbookApplication, UseStore};
+use dioxus::prelude::Props;
 
 // TODO: Actually switch to the corresponding CRDTs.
 pub type Sequence<A> = Vec<A>;
-pub type OrderedMap<K,V> = BTreeMap<K,V>;
+pub type OrderedMap<K, V> = BTreeMap<K, V>;
 pub type RGA<A> = A;
 
 pub type OdysseyRef<A> = A;
@@ -33,8 +27,8 @@ pub type RecipeId = Time;
 pub struct Recipe {
     pub title: LWW<Time, String>,
     pub ingredients: LWW<Time, Vec<String>>, // Sequence<String>,
-    pub instructions: LWW<Time, String>, // RGA<String>,
-    // pub image: Sequence<OdysseyRef<Image>>, // Sequence?
+    pub instructions: LWW<Time, String>,     // RGA<String>,
+                                             // pub image: Sequence<OdysseyRef<Image>>, // Sequence?
 }
 
 // TODO: Define the CBOR for this properly
@@ -51,7 +45,12 @@ impl CRDT for Recipe {
     type Op = RecipeOp;
     type Time = Time;
 
-    fn apply<CS: CausalState<Time = Self::Time>>(self, st: &CS, op_time: Time, op: Self::Op) -> Self {
+    fn apply<CS: CausalState<Time = Self::Time>>(
+        self,
+        st: &CS,
+        op_time: Time,
+        op: Self::Op,
+    ) -> Self {
         match op {
             RecipeOp::Title(t) => Recipe {
                 title: self.title.apply(st, op_time, t),
@@ -89,7 +88,12 @@ impl CRDT for Cookbook {
     type Op = CookbookOp;
     type Time = Time;
 
-    fn apply<CS: CausalState<Time = Self::Time>>(self, st: &CS, op_time: Time, op: Self::Op) -> Self {
+    fn apply<CS: CausalState<Time = Self::Time>>(
+        self,
+        st: &CS,
+        op_time: Time,
+        op: Self::Op,
+    ) -> Self {
         match op {
             CookbookOp::Title(t) => Cookbook {
                 title: self.title.apply(st, op_time, t),
@@ -98,7 +102,7 @@ impl CRDT for Cookbook {
             CookbookOp::Recipes(rs) => Cookbook {
                 recipes: self.recipes.apply(st, op_time, rs),
                 ..self
-            }
+            },
         }
     }
 }

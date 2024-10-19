@@ -1,15 +1,15 @@
 pub mod recipe;
 
 use dioxus::events::MouseEvent;
-use dioxus_markdown::Markdown;
 use dioxus::prelude::*;
-use dioxus_heroicons::{Icon, solid::Shape};
+use dioxus_heroicons::{solid::Shape, Icon};
+use dioxus_markdown::Markdown;
 // TODO: Fix outline icons.
 
 use odyssey_crdt::map::twopmap::TwoPMapOp;
 
 use crate::gui::layout::recipe::form::{recipe_form, valid_recipe_form};
-use crate::state::{Cookbook, CookbookId, CookbookOp, RecipeId, Recipe, RecipeOp, State};
+use crate::state::{Cookbook, CookbookId, CookbookOp, Recipe, RecipeId, RecipeOp, State};
 
 use crate::{CookbookApplication, UseStore};
 
@@ -36,18 +36,37 @@ fn is_cookbook_selected(view: &View, cid: CookbookId) -> bool {
 #[component]
 // pub fn layout(cx: Scope, state: Vec<UseStore<CookbookApplication, Cookbook>>) -> Element {
 pub fn layout(state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>) -> Element {
-    let view = use_signal(|| {
-        View::NoSelection
-    });
+    let view = use_signal(|| View::NoSelection);
 
     let v = view.read();
     let r = match &*v {
         View::Login => todo!(),
-        View::NoSelection => rsx! ( NoSelectionView { view: view, state: state } ),
-        View::Cookbook(cookbookid) => rsx! ( CookbookView { view: view, state: state, cookbook_id: *cookbookid } ),
-        View::CookbookRecipe(cookbookid, recipeid) => rsx! ( CookbookRecipeView { view: view, state: state, cookbook_id: *cookbookid, recipe_id: recipeid.clone() } ),
-        View::CookbookRecipeNew(cookbookid) => rsx! ( CookbookRecipeNewView { view: view, state: state, cookbook_id: *cookbookid } ),
-        View::CookbookRecipeEdit(cookbookid, recipeid) => rsx! ( CookbookRecipeEditView { view: view, state: state, cookbook_id: *cookbookid, recipe_id: recipeid.clone() } ),
+        View::NoSelection => rsx!(NoSelectionView {
+            view: view,
+            state: state
+        }),
+        View::Cookbook(cookbookid) => rsx!(CookbookView {
+            view: view,
+            state: state,
+            cookbook_id: *cookbookid
+        }),
+        View::CookbookRecipe(cookbookid, recipeid) => rsx!(CookbookRecipeView {
+            view: view,
+            state: state,
+            cookbook_id: *cookbookid,
+            recipe_id: recipeid.clone()
+        }),
+        View::CookbookRecipeNew(cookbookid) => rsx!(CookbookRecipeNewView {
+            view: view,
+            state: state,
+            cookbook_id: *cookbookid
+        }),
+        View::CookbookRecipeEdit(cookbookid, recipeid) => rsx!(CookbookRecipeEditView {
+            view: view,
+            state: state,
+            cookbook_id: *cookbookid,
+            recipe_id: recipeid.clone()
+        }),
     };
     rsx!(
         div {
@@ -58,7 +77,10 @@ pub fn layout(state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>) -> El
 }
 
 #[component]
-fn NoSelectionView(view: Signal<View>, state: Signal<Vec<UseStore<CookbookApplication,Cookbook>>>) -> Element {
+fn NoSelectionView(
+    view: Signal<View>,
+    state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>,
+) -> Element {
     rsx! (
         Sidebar { view: view, state: state }
         div {
@@ -71,7 +93,11 @@ fn NoSelectionView(view: Signal<View>, state: Signal<Vec<UseStore<CookbookApplic
     )
 }
 
-fn get_cookbook_store(mut view: Signal<View>, state: Signal<State>, cookbook_id: CookbookId) -> Option<UseStore<CookbookApplication, Cookbook>> {
+fn get_cookbook_store(
+    mut view: Signal<View>,
+    state: Signal<State>,
+    cookbook_id: CookbookId,
+) -> Option<UseStore<CookbookApplication, Cookbook>> {
     let cookbook = state.with(|state| state.get(cookbook_id).cloned()); // TODO: Can we avoid this clone? Return a ref?
     if cookbook.is_none() {
         // Cookbook not found, so set no selection.
@@ -100,9 +126,16 @@ fn CookbookView(view: Signal<View>, state: Signal<State>, cookbook_id: CookbookI
     let cookbook_store = get_cookbook_store(view, state, cookbook_id)?;
     let cookbook = cookbook_store.get_current_state()?;
 
-    let pills = cookbook.recipes.iter().map(|(recipe_id, recipe)| { rsx! (
-        RecipePill { view: view, cookbook_id: cookbook_id, recipe_id: recipe_id.clone(), recipe: recipe.clone() } // TODO: Can we avoid this clone?
-    )});
+    let pills = cookbook.recipes.iter().map(|(recipe_id, recipe)| {
+        rsx!(
+            RecipePill {
+                view: view,
+                cookbook_id: cookbook_id,
+                recipe_id: recipe_id.clone(),
+                recipe: recipe.clone()
+            } // TODO: Can we avoid this clone?
+        )
+    });
     rsx! (
         Sidebar { view: view, state: state }
         div {
@@ -141,7 +174,12 @@ fn CookbookView(view: Signal<View>, state: Signal<State>, cookbook_id: CookbookI
 }
 
 #[component]
-fn CookbookRecipeView(view: Signal<View>, state: Signal<State>, cookbook_id: CookbookId, recipe_id: RecipeId) -> Element {
+fn CookbookRecipeView(
+    view: Signal<View>,
+    state: Signal<State>,
+    cookbook_id: CookbookId,
+    recipe_id: RecipeId,
+) -> Element {
     let cookbook_store = get_cookbook_store(view, state, cookbook_id)?;
     let cookbook = cookbook_store.get_current_state()?;
     let recipe = get_recipe(view, &cookbook, recipe_id)?;
@@ -219,7 +257,11 @@ fn CookbookRecipeView(view: Signal<View>, state: Signal<State>, cookbook_id: Coo
 }
 
 #[component]
-fn CookbookRecipeNewView(view: Signal<View>, state: Signal<State>, cookbook_id: CookbookId) -> Element {
+fn CookbookRecipeNewView(
+    view: Signal<View>,
+    state: Signal<State>,
+    cookbook_id: CookbookId,
+) -> Element {
     let cookbook_store = get_cookbook_store(view, state, cookbook_id)?;
     let cookbook = cookbook_store.get_current_state()?;
     rsx!(
@@ -234,7 +276,12 @@ fn CookbookRecipeNewView(view: Signal<View>, state: Signal<State>, cookbook_id: 
 }
 
 #[component]
-fn CookbookRecipeEditView(view: Signal<View>, state: Signal<State>, cookbook_id: CookbookId, recipe_id: RecipeId) -> Element {
+fn CookbookRecipeEditView(
+    view: Signal<View>,
+    state: Signal<State>,
+    cookbook_id: CookbookId,
+    recipe_id: RecipeId,
+) -> Element {
     let mut cookbook_store = get_cookbook_store(view, state, cookbook_id)?;
     let cookbook_store_state = cookbook_store.get_current_store_state()?;
     let old_cookbook = cookbook_store_state.state;
@@ -269,12 +316,15 @@ fn CookbookRecipeEditView(view: Signal<View>, state: Signal<State>, cookbook_id:
 
         // Save updated fields by applying CRDT operations.
         // cookbook_store.apply_batch_operations(pending_ops);
-        let ops = pending_ops.into_iter().map(|op|
-            CookbookOp::Recipes(TwoPMapOp::Apply {
-                key: recipe_id,
-                operation: op,
+        let ops = pending_ops
+            .into_iter()
+            .map(|op| {
+                CookbookOp::Recipes(TwoPMapOp::Apply {
+                    key: recipe_id,
+                    operation: op,
+                })
             })
-        ).collect();
+            .collect();
         println!("ops: {:?}", ops);
         cookbook_store.apply_batch(parent_header_ids.clone(), ops);
 
@@ -332,7 +382,12 @@ fn CookbookRecipeEditView(view: Signal<View>, state: Signal<State>, cookbook_id:
 }
 
 #[component]
-fn RecipePill(view: Signal<View>, cookbook_id: CookbookId, recipe_id: RecipeId, recipe: Recipe) -> Element {
+fn RecipePill(
+    view: Signal<View>,
+    cookbook_id: CookbookId,
+    recipe_id: RecipeId,
+    recipe: Recipe,
+) -> Element {
     rsx! (
         div {
             class: "basis-1/3",
@@ -355,16 +410,23 @@ fn RecipePill(view: Signal<View>, cookbook_id: CookbookId, recipe_id: RecipeId, 
 }
 
 #[component]
-fn Sidebar(view: Signal<View>, state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>) -> Element {
+fn Sidebar(
+    view: Signal<View>,
+    state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>,
+) -> Element {
     let cookbooks = state.read();
-    let cookbooks = cookbooks.iter().filter_map(|cookbook_store|
-
-            cookbook_store.get_current_state()
-        ).enumerate().map(|(i,cookbook)| {
-            rsx!(
-                SidebarItem { title: cookbook.title.value(), icon: Shape::BookOpen, selected: is_cookbook_selected(&view.read(), i), onclick: move |_e| {view.set(View::Cookbook(i))} }
-            )
-    });
+    let cookbooks = cookbooks
+        .iter()
+        .filter_map(|cookbook_store| cookbook_store.get_current_state())
+        .enumerate()
+        .map(|(i, cookbook)| {
+            rsx!(SidebarItem {
+                title: cookbook.title.value(),
+                icon: Shape::BookOpen,
+                selected: is_cookbook_selected(&view.read(), i),
+                onclick: move |_e| { view.set(View::Cookbook(i)) }
+            })
+        });
 
     rsx! (
         div {
@@ -388,7 +450,8 @@ fn Sidebar(view: Signal<View>, state: Signal<Vec<UseStore<CookbookApplication, C
 }
 
 #[derive(Props, Clone, PartialEq)]
-pub struct SidebarHeaderProps { // <'a> {
+pub struct SidebarHeaderProps {
+    // <'a> {
     title: String, // &'a str
 }
 
@@ -416,7 +479,7 @@ pub struct SidebarItemProps {
 }
 
 pub fn SidebarItem<'a>(props: SidebarItemProps) -> Element {
-    let is_selected = if props.selected {"selected"} else {""};
+    let is_selected = if props.selected { "selected" } else { "" };
     rsx! (
         li {
             div {

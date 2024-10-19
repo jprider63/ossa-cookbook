@@ -17,8 +17,10 @@ pub fn valid_recipe_form(recipe_form: &RecipeForm) -> bool {
     // TODO: new_ingredient?
     let new_instructions = recipe_form.instructions.peek();
     let is_err = validate_name(&new_name).is_err()
-              || new_ingredients.iter().any(|i| validate_ingredient(i).is_err())
-              || validate_instructions(&new_instructions).is_err();
+        || new_ingredients
+            .iter()
+            .any(|i| validate_ingredient(i).is_err())
+        || validate_instructions(&new_instructions).is_err();
     !is_err
 }
 
@@ -34,7 +36,7 @@ pub fn validate_ingredient(ingredient: &str) -> Result<(), &'static str> {
     // if ingredient.len() == 0 {
     //     Err("Please enter an ingredient.")
     // } else {
-        Ok(())
+    Ok(())
     // }
 }
 
@@ -144,4 +146,3 @@ pub fn recipe_form(initial_recipe: &Recipe) -> (Element, RecipeForm) {
     );
     (view, form_state)
 }
-
