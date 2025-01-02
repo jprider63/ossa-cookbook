@@ -158,7 +158,7 @@ fn main() {
             let odyssey_prop = OdysseyProp::new(odyssey);
             Box::new(odyssey_prop)
         })],
-        c,
+        vec![Box::new(c)],
     );
 }
 

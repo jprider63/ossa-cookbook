@@ -123,8 +123,8 @@ fn get_recipe(mut view: Signal<View>, cookbook: &Cookbook, recipe_id: RecipeId) 
 
 #[component]
 fn CookbookView(view: Signal<View>, state: Signal<State>, cookbook_id: CookbookId) -> Element {
-    let cookbook_store = get_cookbook_store(view, state, cookbook_id)?;
-    let cookbook = cookbook_store.get_current_state()?;
+    let cookbook_store = get_cookbook_store(view, state, cookbook_id).expect("TODO"); // ?;
+    let cookbook = cookbook_store.get_current_state().expect("TODO"); // ?;
 
     let pills = cookbook.recipes.iter().map(|(recipe_id, recipe)| {
         rsx!(
@@ -180,9 +180,9 @@ fn CookbookRecipeView(
     cookbook_id: CookbookId,
     recipe_id: RecipeId,
 ) -> Element {
-    let cookbook_store = get_cookbook_store(view, state, cookbook_id)?;
-    let cookbook = cookbook_store.get_current_state()?;
-    let recipe = get_recipe(view, &cookbook, recipe_id)?;
+    let cookbook_store = get_cookbook_store(view, state, cookbook_id).expect("TODO"); // ?;
+    let cookbook = cookbook_store.get_current_state().expect("TODO"); // ?;
+    let recipe = get_recipe(view, &cookbook, recipe_id).expect("TODO"); // ?;
 
     rsx! (
         Sidebar { view: view, state: state }
@@ -262,8 +262,8 @@ fn CookbookRecipeNewView(
     state: Signal<State>,
     cookbook_id: CookbookId,
 ) -> Element {
-    let cookbook_store = get_cookbook_store(view, state, cookbook_id)?;
-    let cookbook = cookbook_store.get_current_state()?;
+    let cookbook_store = get_cookbook_store(view, state, cookbook_id).expect("TODO"); // ?;
+    let cookbook = cookbook_store.get_current_state().expect("TODO"); // ?;
     rsx!(
         Sidebar { view: view, state: state }
         div {
@@ -282,12 +282,12 @@ fn CookbookRecipeEditView(
     cookbook_id: CookbookId,
     recipe_id: RecipeId,
 ) -> Element {
-    let mut cookbook_store = get_cookbook_store(view, state, cookbook_id)?;
-    let cookbook_store_state = cookbook_store.get_current_store_state()?;
+    let mut cookbook_store = get_cookbook_store(view, state, cookbook_id).expect("TODO"); // ?;
+    let cookbook_store_state = cookbook_store.get_current_store_state().expect("TODO"); // ?;
     let old_cookbook = cookbook_store_state.state;
     let parent_header_ids = cookbook_store_state.ecg.tips().clone();
 
-    let old_recipe = get_recipe(view, &old_cookbook, recipe_id)?;
+    let old_recipe = get_recipe(view, &old_cookbook, recipe_id).expect("TODO"); // ?;
 
     let old_recipe = old_recipe.clone();
     let (form, form_state) = recipe_form(&old_recipe);
