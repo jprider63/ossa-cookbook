@@ -9,7 +9,7 @@ edition = "2021"
 clap = { version = "4.3.10", features = ["derive"] }
 dioxus = {version = "0.6.1"}
 dioxus-desktop = "0.6.1"
-dioxus-heroicons = {git = "https://github.com/jprider63/dioxus-heroicons.git", rev="8b8576e500befb6a7004133ab780d73fb3dde286"}
+dioxus-heroicons = {git = "https://github.com/jprider63/dioxus-heroicons.git", rev="454275f44cff27306ddd55601129a495aeb8c92c"}
 dioxus_markdown = {git = "https://github.com/jprider63/dioxus-markdown.git", rev="11fe6502896870bf328b4c6475aaf48112e83cdd"}
 futures = "*"
 keyboard-types = "*"
