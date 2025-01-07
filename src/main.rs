@@ -1,5 +1,6 @@
 use clap::Parser;
 use dioxus::prelude::*;
+use dioxus_desktop::muda::{Menu, PredefinedMenuItem, Submenu};
 // use dioxus_desktop::tao::menu::{AboutMetadata, MenuBar, MenuItem, MenuItemAttributes};
 use futures::StreamExt;
 use odyssey_core::network::p2p::{P2PManager, P2PSettings};
@@ -102,19 +103,19 @@ fn main() {
     //     cli::run_client();
     // }
 
-    // let mut about_menu = MenuBar::new();
-    // about_menu.add_native_item(MenuItem::About(app_name.into(), AboutMetadata::default()));
-    // about_menu.add_native_item(MenuItem::Separator);
-    // about_menu.add_native_item(MenuItem::Hide);
-    // about_menu.add_native_item(MenuItem::HideOthers);
-    // about_menu.add_native_item(MenuItem::ShowAll);
-    // about_menu.add_native_item(MenuItem::Separator);
-    // about_menu.add_native_item(MenuItem::Quit);
+    let mut about_menu = Submenu::new(app_name, true);
+    about_menu.append(&PredefinedMenuItem::about(None, None)).expect("TODO");
+    about_menu.append(&PredefinedMenuItem::separator()).expect("TODO");
+    about_menu.append(&PredefinedMenuItem::hide(None)).expect("TODO");
+    about_menu.append(&PredefinedMenuItem::hide_others(None)).expect("TODO");
+    about_menu.append(&PredefinedMenuItem::show_all(None)).expect("TODO");
+    about_menu.append(&PredefinedMenuItem::separator()).expect("TODO");
+    about_menu.append(&PredefinedMenuItem::quit(None)).expect("TODO");
 
-    // let mut file_menu = MenuBar::new();
+    let mut file_menu = Submenu::new("File", true);
     // file_menu.add_native_item(MenuItem::CloseWindow);
 
-    // let mut edit_menu = MenuBar::new();
+    let mut edit_menu = Submenu::new("Edit", true);
     // edit_menu.add_native_item(MenuItem::Undo);
     // edit_menu.add_native_item(MenuItem::Redo);
     // edit_menu.add_native_item(MenuItem::Separator);
@@ -124,10 +125,10 @@ fn main() {
     // edit_menu.add_native_item(MenuItem::Separator);
     // edit_menu.add_native_item(MenuItem::SelectAll);
 
-    // let view_menu = MenuBar::new();
+    let view_menu = Submenu::new("View", true);
     // // TODO: Hide tab bar items.
 
-    // let mut window_menu = MenuBar::new();
+    let mut window_menu = Submenu::new("Window", true);
     // window_menu.add_native_item(MenuItem::Minimize);
     // window_menu.add_native_item(MenuItem::Zoom);
     // // window_menu.add_native_item(MenuItem::Separator);
@@ -135,20 +136,20 @@ fn main() {
     // // window_menu.add_native_item(MenuItem::Window);
     // // window_menu.add_native_item(MenuItem::CloseWindow);
 
-    // let mut help_menu = MenuBar::new();
+    let mut help_menu = Submenu::new("Help", true);
     // help_menu.add_item(MenuItemAttributes::new(&format!("{} Help", app_name)));
 
-    // let mut menu = MenuBar::new();
-    // menu.add_submenu( app_name, true, about_menu);
-    // menu.add_submenu( "File", true, file_menu);
-    // menu.add_submenu( "Edit", true, edit_menu);
-    // menu.add_submenu( "View", true, view_menu);
-    // menu.add_submenu( "Window", true, window_menu);
-    // menu.add_submenu( "Help", true, help_menu);
+    let mut menu = Menu::new();
+    menu.append(&about_menu).expect("TODO");
+    menu.append(&file_menu).expect("TODO");
+    menu.append(&edit_menu).expect("TODO");
+    menu.append(&view_menu).expect("TODO");
+    menu.append(&window_menu).expect("TODO");
+    menu.append(&help_menu).expect("TODO");
 
     let w = dioxus_desktop::WindowBuilder::new().with_title(app_name);
     // .with_menu(menu); // TODO XXX
-    let c = dioxus_desktop::Config::new().with_window(w);
+    let c = dioxus_desktop::Config::new().with_window(w).with_menu(menu);
     // let odyssey_prop = OdysseyProp::new(odyssey);
     // dioxus_desktop::launch_with_props(app, odyssey_prop, c);
     dioxus_desktop::launch::launch(
@@ -254,11 +255,11 @@ fn app() -> Element {
 }
 
 // #[derive(Props, PartialEq)]
-struct OdysseyProp<A: 'static> {
+struct OdysseyProp<A: OdysseyType + 'static> {
     odyssey: Rc<Odyssey<A>>,
 }
 
-impl<A: 'static> Clone for OdysseyProp<A> {
+impl<A: OdysseyType + 'static> Clone for OdysseyProp<A> {
     fn clone(&self) -> Self {
         OdysseyProp {
             odyssey: self.odyssey.clone(),
@@ -266,7 +267,7 @@ impl<A: 'static> Clone for OdysseyProp<A> {
     }
 }
 
-impl<A> OdysseyProp<A> {
+impl<A: OdysseyType> OdysseyProp<A> {
     fn new(odyssey: Odyssey<A>) -> Self {
         OdysseyProp {
             odyssey: Rc::new(odyssey),

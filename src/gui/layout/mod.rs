@@ -11,7 +11,7 @@ use odyssey_crdt::map::twopmap::TwoPMapOp;
 use crate::gui::layout::recipe::form::{recipe_form, valid_recipe_form};
 use crate::state::{Cookbook, CookbookId, CookbookOp, Recipe, RecipeId, RecipeOp, State};
 
-use crate::{CookbookApplication, UseStore};
+use crate::{OdysseyProp, CookbookApplication, UseStore};
 
 enum View {
     Login,
@@ -20,12 +20,14 @@ enum View {
     CookbookRecipe(CookbookId, RecipeId),
     CookbookRecipeNew(CookbookId),
     CookbookRecipeEdit(CookbookId, RecipeId),
+    ConnectToPeer,
 }
 
 fn is_cookbook_selected(view: &View, cid: CookbookId) -> bool {
     match view {
         View::Login => false,
         View::NoSelection => false,
+        View::ConnectToPeer => false,
         View::Cookbook(vid) => *vid == cid,
         View::CookbookRecipe(vid, _rid) => *vid == cid,
         View::CookbookRecipeNew(vid) => *vid == cid,
@@ -67,6 +69,10 @@ pub fn layout(state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>) -> El
             cookbook_id: *cookbookid,
             recipe_id: recipeid.clone()
         }),
+        View::ConnectToPeer => rsx!(ConnectToPeerView {
+            view: view,
+            state: state,
+        }),
     };
     rsx!(
         div {
@@ -79,7 +85,7 @@ pub fn layout(state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>) -> El
 #[component]
 fn NoSelectionView(
     view: Signal<View>,
-    state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>,
+    state: Signal<State>,
 ) -> Element {
     rsx! (
         Sidebar { view: view, state: state }
@@ -268,9 +274,9 @@ fn CookbookRecipeNewView(
         Sidebar { view: view, state: state }
         div {
             class: "content",
-                p {
-                    "TODO: Create recipe function"
-                }
+            p {
+                "TODO: Create recipe function"
+            }
         }
     )
 }
@@ -412,7 +418,7 @@ fn RecipePill(
 #[component]
 fn Sidebar(
     view: Signal<View>,
-    state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>,
+    state: Signal<State>,
 ) -> Element {
     let cookbooks = state.read();
     let cookbooks = cookbooks
@@ -443,6 +449,7 @@ fn Sidebar(
                     SidebarHeader { title: "SETTINGS" }
                     SidebarItem   { title: "Account", icon: Shape::User, selected: false, onclick: |_e| {println!("TODO!")} }
                     SidebarItem   { title: "Logout", icon: Shape::ArrowRightOnRectangle, selected: false, onclick: |_e| {println!("TODO!")} }
+                    SidebarItem   { title: "Connections (TMP)", icon: Shape::Users, selected: false, onclick: move |_e| { view.set(View::ConnectToPeer) } }
                 }
             }
         }
@@ -495,6 +502,32 @@ pub fn SidebarItem<'a>(props: SidebarItemProps) -> Element {
                 span {
                     class: "ml-2 text-sm tracking-wide truncate",
                     "{props.title}"
+                }
+            }
+        }
+    )
+}
+
+#[component]
+fn ConnectToPeerView(
+    view: Signal<View>,
+    state: Signal<State>,
+) -> Element {
+    let odyssey = use_context::<OdysseyProp<CookbookApplication>>().odyssey;
+    let connect_handler = move |_| {
+        println!("TODO: Connect to peer");
+        odyssey.connect_to_peer_ipv4("127.0.0.1:8080".parse().unwrap());
+    };
+
+    rsx! (
+        Sidebar { view: view, state: state }
+        div {
+            class: "content",
+            div {
+                class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
+                onclick: connect_handler,
+                span {
+                    "Connect to peer 127.0.0.1:8080"
                 }
             }
         }
