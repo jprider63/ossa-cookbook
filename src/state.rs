@@ -5,6 +5,7 @@ use odyssey_core::util::Sha256Hash;
 
 // use im::OrdMap;
 use serde::{Deserialize, Serialize};
+use typeable::Typeable;
 use std::collections::BTreeMap;
 
 use crate::{CookbookApplication, UseStore};
@@ -23,7 +24,7 @@ pub type UserId = u32;
 pub type Time = OperationId<HeaderId<Sha256Hash>>;
 // pub struct RecipeId(Time); // TODO: Newtype wrap this. JP: How do we get this newtype wrapper to work? `Into` instance?
 pub type RecipeId = Time;
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Typeable, Serialize, Deserialize)]
 pub struct Recipe {
     pub title: LWW<Time, String>,
     pub ingredients: LWW<Time, Vec<String>>, // Sequence<String>,
@@ -69,7 +70,7 @@ impl CRDT for Recipe {
 }
 
 pub type CookbookId = usize; // TODO: Newtype wrap this.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Typeable)]
 pub struct Cookbook {
     pub title: LWW<Time, String>,
     pub recipes: TwoPMap<RecipeId, Recipe>,

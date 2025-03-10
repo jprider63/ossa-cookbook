@@ -24,4 +24,4 @@ tauri = "*"
 tokio = {version="*", features=["rt","rt-multi-thread","net"]}
 tokio-util = {version="*", features=["codec"]}
 
-typeable = {path = "/Users/james/Documents/Projects/odyssey/typeable"}
+typeable = {path = "/Users/james/Documents/Projects/odyssey/typeable", features = ["serde", "im"]}

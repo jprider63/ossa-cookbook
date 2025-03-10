@@ -27,7 +27,7 @@ pub(crate) fn run_client() {
             store_id: Sha256Hash([0; 32]),
             body_request: None,
         };
-        let response = run_store_metadata_client::<Sha256Hash, Sha256Hash, _>(&mut stream, req)
+        let response = run_store_metadata_client::<Sha256Hash, _>(&mut stream, req)
             .await
             .unwrap();
 

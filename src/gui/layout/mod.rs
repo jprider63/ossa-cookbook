@@ -137,7 +137,7 @@ fn CookbookView(view: Signal<View>, state: Signal<State>, cookbook_id: CookbookI
             RecipePill {
                 view: view,
                 cookbook_id: cookbook_id,
-                recipe_id: recipe_id.clone(),
+                recipe_id: *recipe_id,
                 recipe: recipe.clone()
             } // TODO: Can we avoid this clone?
         )
@@ -354,7 +354,7 @@ fn CookbookRecipeEditView(
                     class: "flex-1 flex justify-start mr-auto whitespace-nowrap",
                     div {
                         class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
-                        onclick: move |_e| {view.set(View::CookbookRecipe(cookbook_id, recipe_id.clone()))},
+                        onclick: move |_e| {view.set(View::CookbookRecipe(cookbook_id, recipe_id))},
                         Icon {
                             class: "w-6 h-6",
                             icon: Shape::ChevronLeft,
@@ -515,7 +515,6 @@ fn ConnectToPeerView(
 ) -> Element {
     let odyssey = use_context::<OdysseyProp<CookbookApplication>>().odyssey;
     let connect_handler = move |_| {
-        println!("TODO: Connect to peer");
         odyssey.connect_to_peer_ipv4("127.0.0.1:8080".parse().unwrap());
     };
 
@@ -528,6 +527,45 @@ fn ConnectToPeerView(
                 onclick: connect_handler,
                 span {
                     "Connect to peer 127.0.0.1:8080"
+                }
+            }
+            ConnectToStoreView {}
+        }
+    )
+}
+
+#[component]
+fn ConnectToStoreView(
+) -> Element {
+    use crate::gui::form::TextField;
+
+    pub fn validate_store_id(store_id: &str) -> Result<(), &'static str> {
+        Ok(())
+    }
+
+    let mut store_id = use_signal(|| "".to_string());
+
+    let odyssey = use_context::<OdysseyProp<CookbookApplication>>().odyssey;
+    let connect_handler = move |_| {
+        let store_id = store_id.peek().parse().expect("TODO");
+        println!("Connecting to store: {:?}", store_id);
+        odyssey.connect_to_store::<Cookbook>(store_id); // , MemoryStorage::new());
+    };
+
+    rsx! (
+        div {
+            TextField {
+                placeholder: "Store Id",
+                id: "store_id",
+                value: store_id,
+                oninput: move |evt: Event<FormData>| store_id.set(evt.value()),
+                validation_fn: validate_store_id,
+            }
+            div {
+                class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
+                onclick: connect_handler,
+                span {
+                    "Connect to store"
                 }
             }
         }

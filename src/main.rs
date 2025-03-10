@@ -3,7 +3,6 @@ use dioxus::prelude::*;
 use dioxus_desktop::muda::{Menu, PredefinedMenuItem, Submenu};
 // use dioxus_desktop::tao::menu::{AboutMetadata, MenuBar, MenuItem, MenuItemAttributes};
 use futures::StreamExt;
-use odyssey_core::network::p2p::{P2PManager, P2PSettings};
 use odyssey_core::network::protocol::ecg_sync;
 use odyssey_core::storage::memory::MemoryStorage;
 use odyssey_core::store::ecg::v0::{Header, HeaderId, OperationId};
@@ -278,7 +277,7 @@ impl<A: OdysseyType> OdysseyProp<A> {
 enum CookbookApplication {}
 
 impl OdysseyType for CookbookApplication {
-    type StoreId = (); // TODO
+    type StoreId = Sha256Hash; // TODO
                        // type ECGHeader<T: CRDT<Op: Serialize, Time = OperationId<HeaderId<Sha256Hash>>>> = Header<Sha256Hash, T>;
                        // type ECGHeader<T: CRDT<Time = OperationId<HeaderId<Sha256Hash>>>> = Header<Sha256Hash, T>;
     type ECGHeader<T: CRDT<Time = Self::Time, Op: Serialize>> = Header<Sha256Hash, T>;
