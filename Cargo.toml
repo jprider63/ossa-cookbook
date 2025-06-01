@@ -19,6 +19,8 @@ odyssey-core = {path = "/Users/james/Documents/Projects/odyssey/odyssey-core"}
 odyssey-crdt = {path = "/Users/james/Documents/Projects/odyssey/odyssey-crdt"}
 serde = "*"
 tauri = "2.2.4"
+tracing = "*"
+tracing-subscriber = "*"
 
 # tmp?
 tokio = {version="*", features=["rt","rt-multi-thread","net"]}

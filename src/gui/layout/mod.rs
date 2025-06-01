@@ -7,6 +7,7 @@ use dioxus_markdown::Markdown;
 // TODO: Fix outline icons.
 
 use odyssey_crdt::map::twopmap::TwoPMapOp;
+use tracing::{debug, error, warn};
 
 use crate::gui::layout::recipe::form::{recipe_form, valid_recipe_form};
 use crate::state::{Cookbook, CookbookId, CookbookOp, Recipe, RecipeId, RecipeOp, State};
@@ -108,7 +109,7 @@ fn get_cookbook_store(
     if cookbook.is_none() {
         // Cookbook not found, so set no selection.
         // TODO: Log this and display error.
-        println!("Cookbook {} not found.", cookbook_id);
+        error!("Cookbook {} not found.", cookbook_id);
 
         view.set(View::NoSelection);
     }
@@ -120,7 +121,7 @@ fn get_recipe(mut view: Signal<View>, cookbook: &Cookbook, recipe_id: RecipeId) 
     if recipe.is_none() {
         // Recipe not found, so set no selection.
         // TODO: Log this and display error.
-        println!("Recipe {:?} not found.", recipe_id);
+        error!("Recipe {:?} not found.", recipe_id);
 
         view.set(View::NoSelection);
     }
@@ -331,7 +332,7 @@ fn CookbookRecipeEditView(
                 })
             })
             .collect();
-        println!("ops: {:?}", ops);
+        debug!("ops: {:?}", ops);
         cookbook_store.apply_batch(parent_header_ids.clone(), ops);
 
         // TODO: Send CRDT operations
@@ -444,11 +445,11 @@ fn Sidebar(
                     SidebarHeader { title: "COOKBOOKS" }
                     { cookbooks }
                     SidebarHeader { title: "MEAL PLANNER" }
-                    SidebarItem   { title: "Weekly meals", icon: Shape::PencilSquare, onclick: |_e| {println!("TODO!")}, selected: false }
-                    SidebarItem   { title: "Thanksgiving", icon: Shape::PencilSquare, selected: false, onclick: |_e| {println!("TODO!")} }
+                    SidebarItem   { title: "Weekly meals", icon: Shape::PencilSquare, onclick: |_e| {warn!("TODO!")}, selected: false }
+                    SidebarItem   { title: "Thanksgiving", icon: Shape::PencilSquare, selected: false, onclick: |_e| {warn!("TODO!")} }
                     SidebarHeader { title: "SETTINGS" }
-                    SidebarItem   { title: "Account", icon: Shape::User, selected: false, onclick: |_e| {println!("TODO!")} }
-                    SidebarItem   { title: "Logout", icon: Shape::ArrowRightOnRectangle, selected: false, onclick: |_e| {println!("TODO!")} }
+                    SidebarItem   { title: "Account", icon: Shape::User, selected: false, onclick: |_e| {warn!("TODO!")} }
+                    SidebarItem   { title: "Logout", icon: Shape::ArrowRightOnRectangle, selected: false, onclick: |_e| {warn!("TODO!")} }
                     SidebarItem   { title: "Connections (TMP)", icon: Shape::Users, selected: false, onclick: move |_e| { view.set(View::ConnectToPeer) } }
                 }
             }
@@ -548,7 +549,7 @@ fn ConnectToStoreView(
     let odyssey = use_context::<OdysseyProp<CookbookApplication>>().odyssey;
     let connect_handler = move |_| {
         let store_id = store_id.peek().parse().expect("TODO");
-        println!("Connecting to store: {:?}", store_id);
+        debug!("Connecting to store: {:?}", store_id);
         odyssey.connect_to_store::<Cookbook>(store_id); // , MemoryStorage::new());
     };
 

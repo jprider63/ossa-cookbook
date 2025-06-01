@@ -11,6 +11,7 @@ use odyssey_core::util::Sha256Hash;
 use odyssey_core::{core::OdysseyType, Odyssey, OdysseyConfig};
 use odyssey_crdt::{map::twopmap::TwoPMap, register::LWW, time::LamportTimestamp, CRDT};
 use serde::Serialize;
+use tracing::debug;
 use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::collections::BTreeSet;
@@ -68,6 +69,9 @@ const app_name: &str = "Odyssey Cookbook";
 // const CSS: &str = manganis::mg!(file("./dist/style.css"));
 
 fn main() {
+    // Turn on logging.
+    tracing_subscriber::fmt::init();
+
     let args = cli::Arguments::parse();
 
     // use typeable::Typeable;
@@ -374,7 +378,7 @@ where
                     snapshot,
                     ecg_state,
                 } => {
-                    println!("Received state!");
+                    debug!("Received state!");
                     let s = StoreState {
                         state: snapshot,
                         ecg: ecg_state,
