@@ -12,7 +12,7 @@ use tracing::{debug, error, warn};
 use crate::gui::layout::recipe::form::{recipe_form, valid_recipe_form};
 use crate::state::{Cookbook, CookbookId, CookbookOp, Recipe, RecipeId, RecipeOp, State};
 
-use crate::{OdysseyProp, CookbookApplication, UseStore};
+use crate::{use_store, CookbookApplication, OdysseyProp, UseStore};
 
 enum View {
     Login,
@@ -530,13 +530,16 @@ fn ConnectToPeerView(
                     "Connect to peer 127.0.0.1:8080"
                 }
             }
-            ConnectToStoreView {}
+            ConnectToStoreView {
+                state
+            }
         }
     )
 }
 
 #[component]
 fn ConnectToStoreView(
+    state: Signal<State>,
 ) -> Element {
     use crate::gui::form::TextField;
 
@@ -546,11 +549,14 @@ fn ConnectToStoreView(
 
     let mut store_id = use_signal(|| "".to_string());
 
-    let odyssey = use_context::<OdysseyProp<CookbookApplication>>().odyssey;
+    // let odyssey = use_context::<OdysseyProp<CookbookApplication>>().odyssey;
     let connect_handler = move |_| {
         let store_id = store_id.peek().parse().expect("TODO");
         debug!("Connecting to store: {:?}", store_id);
-        odyssey.connect_to_store::<Cookbook>(store_id); // , MemoryStorage::new());
+        let recipe_store = use_store(|odyssey| {
+            odyssey.connect_to_store::<Cookbook>(store_id) // , MemoryStorage::new());
+        });
+        state.push(recipe_store);
     };
 
     rsx! (

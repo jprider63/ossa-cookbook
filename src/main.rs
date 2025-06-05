@@ -302,7 +302,8 @@ impl OdysseyType for CookbookApplication {
 }
 
 // TODO: Create `odyssey-dioxus` crate?
-use odyssey_core::core::{StateUpdate, StoreHandle};
+use odyssey_core::core::StoreHandle;
+use odyssey_core::store::StateUpdate;
 struct UseStore<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize> + 'static> {
     handle: Rc<RefCell<StoreHandle<OT, T>>>,
     state: Signal<Option<StoreState<OT, T>>>,
@@ -384,6 +385,10 @@ where
                         ecg: ecg_state,
                     };
                     state.set(Some(s));
+                }
+                StateUpdate::Downloading => {
+                    debug!("Store is downloading");
+                    state.set(None);
                 }
             }
         }
