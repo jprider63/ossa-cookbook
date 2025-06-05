@@ -244,6 +244,7 @@ fn app() -> Element {
     //     cookbooks: vec![recipe_store],
     // }; // JP: Include map from cookbook StoreIds to Cookbooks?
 
+    let root_scope = current_scope_id().expect("Failed to retrieve root scope");
     rsx! (
         head {
             style {{ include_str!("../dist/style.css") }}
@@ -253,7 +254,7 @@ fn app() -> Element {
             // }
         }
 
-        gui::layout::layout { state: state }
+        gui::layout::layout { state: state, root_scope }
     )
 }
 
@@ -337,8 +338,24 @@ where
     }
 }
 
-// fn use_store<OT: OdysseyType, T>(handle: StoreHandle<OT, T>) -> UseStore<OT, T> {
 fn use_store<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize>, F>(
+    build_store_handle: F,
+) -> UseStore<OT, T>
+where
+    F: FnOnce(&Odyssey<CookbookApplication>) -> StoreHandle<OT, T>,
+{
+    let scope = current_scope_id().expect("Failed to get scope id");
+    use_store_in_scope(scope, build_store_handle)
+}
+
+fn use_signal_in_scope<T: 'static>(scope: ScopeId, f: impl FnOnce() -> T) -> Signal<T, UnsyncStorage> {
+    let caller = std::panic::Location::caller();
+    use_hook(|| Signal::new_maybe_sync_in_scope_with_caller(f(), scope, caller))
+}
+
+// JP: Is this usage of ScopeId correct? Will this be deallocated properly?
+fn use_store_in_scope<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize>, F>(
+    scope: ScopeId,
     build_store_handle: F,
 ) -> UseStore<OT, T>
 where
@@ -356,10 +373,11 @@ where
         let h = Rc::new(RefCell::new(h)); // JP: Annoyingly required since dioxus requires clone... XXX
                                           // let st = Rc::new(st); // JP: Annoyingly required since dioxus requires clone... XXX
                                           // let recv_st = Rc::new(recv_st); // JP: Annoyingly required since dioxus requires clone... XXX
-        let recv_st = CopyValue::new(recv_st); // JP: Annoyingly required since dioxus requires clone... XXX
+        let recv_st = CopyValue::new_in_scope(recv_st, scope); // JP: Annoyingly required since dioxus requires clone... XXX
         (h, recv_st)
     });
-    let mut state = use_signal(|| None);
+    // let mut state = use_signal(|| None);
+    let mut state = use_signal_in_scope(scope, || None);
     // let mut state: Signal<T> = use_signal(|| {
     //     // let recv_state = Rc::get_mut(&mut recv_state).unwrap();
     //     let init_st = recv_state.write().blocking_recv().unwrap();

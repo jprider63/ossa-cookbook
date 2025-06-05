@@ -12,7 +12,7 @@ use tracing::{debug, error, warn};
 use crate::gui::layout::recipe::form::{recipe_form, valid_recipe_form};
 use crate::state::{Cookbook, CookbookId, CookbookOp, Recipe, RecipeId, RecipeOp, State};
 
-use crate::{use_store, CookbookApplication, OdysseyProp, UseStore};
+use crate::{use_store, use_store_in_scope, CookbookApplication, OdysseyProp, UseStore};
 
 enum View {
     Login,
@@ -38,7 +38,10 @@ fn is_cookbook_selected(view: &View, cid: CookbookId) -> bool {
 
 #[component]
 // pub fn layout(cx: Scope, state: Vec<UseStore<CookbookApplication, Cookbook>>) -> Element {
-pub fn layout(state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>) -> Element {
+pub fn layout(
+    state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>,
+    root_scope: ScopeId,
+) -> Element {
     let view = use_signal(|| View::NoSelection);
 
     let v = view.read();
@@ -73,6 +76,7 @@ pub fn layout(state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>) -> El
         View::ConnectToPeer => rsx!(ConnectToPeerView {
             view: view,
             state: state,
+            root_scope,
         }),
     };
     rsx!(
@@ -513,6 +517,7 @@ pub fn SidebarItem<'a>(props: SidebarItemProps) -> Element {
 fn ConnectToPeerView(
     view: Signal<View>,
     state: Signal<State>,
+    root_scope: ScopeId,
 ) -> Element {
     let odyssey = use_context::<OdysseyProp<CookbookApplication>>().odyssey;
     let connect_handler = move |_| {
@@ -531,7 +536,8 @@ fn ConnectToPeerView(
                 }
             }
             ConnectToStoreView {
-                state
+                state,
+                root_scope,
             }
         }
     )
@@ -540,6 +546,7 @@ fn ConnectToPeerView(
 #[component]
 fn ConnectToStoreView(
     state: Signal<State>,
+    root_scope: ScopeId,
 ) -> Element {
     use crate::gui::form::TextField;
 
@@ -553,7 +560,7 @@ fn ConnectToStoreView(
     let connect_handler = move |_| {
         let store_id = store_id.peek().parse().expect("TODO");
         debug!("Connecting to store: {:?}", store_id);
-        let recipe_store = use_store(|odyssey| {
+        let recipe_store = use_store_in_scope(root_scope, |odyssey| {
             odyssey.connect_to_store::<Cookbook>(store_id) // , MemoryStorage::new());
         });
         state.push(recipe_store);
