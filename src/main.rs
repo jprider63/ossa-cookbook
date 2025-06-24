@@ -386,8 +386,8 @@ where
                     };
                     state.set(Some(s));
                 }
-                StateUpdate::Downloading => {
-                    debug!("Store is downloading");
+                StateUpdate::Downloading {percent} => {
+                    debug!("Store is downloading ({percent}%)");
                     state.set(None);
                 }
             }

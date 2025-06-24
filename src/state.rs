@@ -70,7 +70,7 @@ impl CRDT for Recipe {
 }
 
 pub type CookbookId = usize; // TODO: Newtype wrap this.
-#[derive(Clone, Debug, Serialize, Typeable)]
+#[derive(Clone, Debug, Deserialize, Serialize, Typeable)]
 pub struct Cookbook {
     pub title: LWW<Time, String>,
     pub recipes: TwoPMap<RecipeId, Recipe>,
