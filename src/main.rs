@@ -5,7 +5,7 @@ use dioxus_desktop::muda::{Menu, PredefinedMenuItem, Submenu};
 use futures::StreamExt;
 use odyssey_core::network::protocol::ecg_sync;
 use odyssey_core::storage::memory::MemoryStorage;
-use odyssey_core::store::ecg::v0::{Header, HeaderId, OperationId};
+use odyssey_core::store::ecg::v0::{Body, Header, HeaderId, OperationId};
 use odyssey_core::store::ecg::{self, ECGBody, ECGHeader};
 use odyssey_core::util::Sha256Hash;
 use odyssey_core::{core::OdysseyType, Odyssey, OdysseyConfig};
@@ -193,7 +193,7 @@ fn initial_demo_state() -> Cookbook {
         // image: vec![],
     };
     // TODO: We should receive this from create_store?
-    let ecg_state: ecg::State<Header<Sha256Hash, LWW<Time, ()>>, LWW<Time, ()>> = ecg::State::new();
+    let ecg_state: ecg::State<Header<Sha256Hash>, LWW<Time, ()>> = ecg::State::new();
 
     let recipes = TwoPMap::new();
     let recipes = recipes.apply(&ecg_state, l.t(), TwoPMap::insert(recipe.clone()));
@@ -282,21 +282,23 @@ impl<A: OdysseyType> OdysseyProp<A> {
 enum CookbookApplication {}
 
 impl OdysseyType for CookbookApplication {
+    type Hash = Sha256Hash;
     type StoreId = Sha256Hash; // TODO
                        // type ECGHeader<T: CRDT<Op: Serialize, Time = OperationId<HeaderId<Sha256Hash>>>> = Header<Sha256Hash, T>;
                        // type ECGHeader<T: CRDT<Time = OperationId<HeaderId<Sha256Hash>>>> = Header<Sha256Hash, T>;
-    type ECGHeader<T: CRDT<Time = Self::Time, Op: Serialize>> = Header<Sha256Hash, T>;
+    type ECGHeader = Header<Sha256Hash>;
     // type ECGHeader<T: CRDT<Op: Serialize>> = Header<Sha256Hash, T>;
+    type ECGBody<T: CRDT> = Body<Sha256Hash, T>; // : CRDT<Time = Self::Time, Op: Serialize>> = Body<Sha256Hash, T>;
 
     type Time = OperationId<HeaderId<Sha256Hash>>;
 
-    type CausalState<T: CRDT<Time = Self::Time, Op: Serialize>> = ecg::State<Self::ECGHeader<T>, T>;
+    type CausalState<T: CRDT<Time = Self::Time, Op: Serialize>> = ecg::State<Self::ECGHeader, T>;
     // type ECGHeader<T> = Header<Sha256Hash, T>
     //     where T: CRDT<Time = OperationId<HeaderId<Sha256Hash>>>;
     // type ECGHeader<T> = Header<Sha256Hash, T>;
 
     fn to_causal_state<'a, T: CRDT<Time = Self::Time, Op: Serialize>>(
-        st: &'a ecg::State<Self::ECGHeader<T>, T>,
+        st: &'a ecg::State<Self::ECGHeader, T>,
     ) -> &'a Self::CausalState<T> {
         st
     }
@@ -323,12 +325,12 @@ impl<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize>> Clone f
 // #[derive(Clone)]
 struct StoreState<OT: OdysseyType, T: CRDT<Time = OT::Time, Op: Serialize>> {
     state: T,
-    ecg: ecg::State<OT::ECGHeader<T>, T>,
+    ecg: ecg::State<OT::ECGHeader, T>,
 }
 
 impl<OT: OdysseyType, T: CRDT<Time = OT::Time, Op: Serialize> + Clone> Clone for StoreState<OT, T>
 where
-    <OT as OdysseyType>::ECGHeader<T>: Clone,
+    <OT as OdysseyType>::ECGHeader: Clone,
 {
     fn clone(&self) -> Self {
         StoreState {
@@ -422,7 +424,7 @@ where
     pub fn get_current_state(&self) -> Option<T>
     where
         T: Clone,
-        <OT as OdysseyType>::ECGHeader<T>: Clone,
+        <OT as OdysseyType>::ECGHeader: Clone,
     {
         self.state.cloned().map(|s| s.state)
     }
@@ -430,29 +432,30 @@ where
     pub fn get_current_store_state(&self) -> Option<StoreState<OT, T>>
     where
         T: Clone,
-        <OT as OdysseyType>::ECGHeader<T>: Clone,
+        <OT as OdysseyType>::ECGHeader: Clone,
     {
         self.state.cloned()
     }
 
     pub fn apply(
         &mut self,
-        parents: BTreeSet<<<OT as OdysseyType>::ECGHeader<T> as ECGHeader<T>>::HeaderId>,
+        parents: BTreeSet<<<OT as OdysseyType>::ECGHeader as ECGHeader>::HeaderId>,
         op: T::Op,
     ) -> T::Time
     where
-        <<OT as OdysseyType>::ECGHeader<T> as ECGHeader<T>>::Body: ECGBody<T>,
+        // <<OT as OdysseyType>::ECGHeader as ECGHeader>::Body: ECGBody<T>,
+        OT::ECGBody<T>: ECGBody<T, Header = OT::ECGHeader>,
     {
         (*self.handle).borrow_mut().apply(parents, op)
     }
 
     pub fn apply_batch(
         &mut self,
-        parents: BTreeSet<<<OT as OdysseyType>::ECGHeader<T> as ECGHeader<T>>::HeaderId>,
+        parents: BTreeSet<<<OT as OdysseyType>::ECGHeader as ECGHeader>::HeaderId>,
         op: Vec<T::Op>,
     ) -> Vec<T::Time>
     where
-        <<OT as OdysseyType>::ECGHeader<T> as ECGHeader<T>>::Body: ECGBody<T>,
+        OT::ECGBody<T>: ECGBody<T, Header = OT::ECGHeader>,
     {
         (*self.handle).borrow_mut().apply_batch(parents, op)
     }
