@@ -12,7 +12,7 @@ use tracing::{debug, error, warn};
 use crate::gui::layout::recipe::form::{recipe_form, valid_recipe_form};
 use crate::state::{Cookbook, CookbookId, CookbookOp, Recipe, RecipeId, RecipeOp, State};
 
-use crate::{use_store, use_store_in_scope, CookbookApplication, OdysseyProp, UseStore};
+use crate::{new_store_in_scope, CookbookApplication, OdysseyProp, UseStore};
 
 enum View {
     Login,
@@ -560,9 +560,10 @@ fn ConnectToStoreView(
     let connect_handler = move |_| {
         let store_id = store_id.peek().parse().expect("TODO");
         debug!("Connecting to store: {:?}", store_id);
-        let recipe_store = use_store_in_scope(root_scope, |odyssey| {
+        let recipe_store = new_store_in_scope(root_scope, |odyssey| {
+        // let recipe_store = use_store(|odyssey| {
             odyssey.connect_to_store::<Cookbook>(store_id) // , MemoryStorage::new());
-        });
+        }).expect("Failed to connect_to_store");
         state.push(recipe_store);
     };
 

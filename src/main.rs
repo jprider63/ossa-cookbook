@@ -11,11 +11,13 @@ use odyssey_core::util::Sha256Hash;
 use odyssey_core::{core::OdysseyType, Odyssey, OdysseyConfig};
 use odyssey_crdt::{map::twopmap::TwoPMap, register::LWW, time::LamportTimestamp, CRDT};
 use serde::Serialize;
-use tracing::debug;
+use tracing::{debug, trace};
 use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::collections::BTreeSet;
+use std::future::Future;
 use std::net::{Ipv4Addr, SocketAddrV4};
+use std::panic::Location;
 use std::rc::Rc;
 
 use crate::state::*;
@@ -307,15 +309,28 @@ impl OdysseyType for CookbookApplication {
 // TODO: Create `odyssey-dioxus` crate?
 use odyssey_core::core::StoreHandle;
 use odyssey_core::store::StateUpdate;
-struct UseStore<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize> + 'static> {
+pub struct UseStore<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize> + 'static> {
+    future: Task,
     handle: Rc<RefCell<StoreHandle<OT, T>>>,
+    // handle: StoreHandle<OT, T>,
     state: Signal<Option<StoreState<OT, T>>>,
     // peers, connections, etc
 }
 
+// TODO: Provide way to gracefully drop UseStore
+// impl<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize> + 'static> Drop for UseStore<OT, T> {
+//     fn drop(&mut self) {
+//         // JP: Gracefully shutdown store receiver somehow?
+//         self.future.cancel();
+// 
+//         self.state.manually_drop(); // JP: Is this needed?
+//     }
+// }
+
 impl<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize>> Clone for UseStore<OT, T> {
     fn clone(&self) -> Self {
         UseStore {
+            future: self.future.clone(),
             handle: self.handle.clone(),
             state: self.state.clone(),
         }
@@ -340,16 +355,83 @@ where
     }
 }
 
-fn use_store<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize>, F>(
+pub fn use_store<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize>, F>(
     build_store_handle: F,
 ) -> UseStore<OT, T>
 where
     F: FnOnce(&Odyssey<CookbookApplication>) -> StoreHandle<OT, T>,
 {
     let scope = current_scope_id().expect("Failed to get scope id");
-    use_store_in_scope(scope, build_store_handle)
+    let odyssey = use_context::<OdysseyProp<CookbookApplication>>().odyssey;
+    let caller = std::panic::Location::caller();
+    use_hook(|| new_store_helper(&odyssey, scope, caller, build_store_handle).unwrap())
 }
 
+fn new_store_helper<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize>, F>(
+    odyssey: &Odyssey<CookbookApplication>,
+    scope: ScopeId,
+    caller: &'static Location,
+    build_store_handle: F,
+) -> Option<UseStore<OT, T>>
+where
+    F: FnOnce(&Odyssey<CookbookApplication>) -> StoreHandle<OT, T>,
+{
+    let mut handle = build_store_handle(odyssey);
+    let mut recv_st = handle.subscribe_to_state();
+
+    // use_hook(|| Signal::new_maybe_sync_in_scope_with_caller(f(), scope, caller))
+    let mut state = Signal::new_maybe_sync_in_scope_with_caller(None, scope, caller);
+
+    let future = spawn_in_scope(scope, async move {
+        debug!("Creating future for store");
+        //     let mut recv_state = handle2.subscribe_to_state();
+        //     // let mut recv_state = Rc::try_unwrap(recv_state).unwrap();
+        //     // let mut recv_state = recv_state.clone();
+        //     // let recv_state = Rc::get_mut(&mut recv_state).unwrap();
+        while let Some(msg) = recv_st.recv().await {
+            match msg {
+                StateUpdate::Snapshot {
+                    snapshot,
+                    ecg_state,
+                } => {
+                    debug!("Received state!");
+                    let s = StoreState {
+                        state: snapshot,
+                        ecg: ecg_state,
+                    };
+                    state.set(Some(s));
+                }
+                StateUpdate::Downloading {percent} => {
+                    debug!("Store is downloading ({percent}%)");
+                    state.set(None);
+                }
+            }
+        }
+        debug!("Future for store is exiting");
+    });
+
+    let Some(future) = future else {
+        state.manually_drop(); // JP: Is this needed?
+        return None;
+    };
+
+    let handle = Rc::new(RefCell::new(handle));
+    Some(UseStore { future, handle, state })
+}
+
+pub fn new_store_in_scope<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize>, F>(
+    scope: ScopeId,
+    build_store_handle: F,
+) -> Option<UseStore<OT, T>>
+where
+    F: FnOnce(&Odyssey<CookbookApplication>) -> StoreHandle<OT, T>,
+{
+    let odyssey = use_context::<OdysseyProp<CookbookApplication>>().odyssey;
+    let caller = std::panic::Location::caller();
+    new_store_helper(&odyssey, scope, caller, build_store_handle)
+}
+
+/*
 fn use_signal_in_scope<T: 'static>(scope: ScopeId, f: impl FnOnce() -> T) -> Signal<T, UnsyncStorage> {
     let caller = std::panic::Location::caller();
     use_hook(|| Signal::new_maybe_sync_in_scope_with_caller(f(), scope, caller))
@@ -388,7 +470,8 @@ where
     // });
     // let handle2 = handle.clone();
     // TODO...
-    use_future(move || async move {
+    let future = use_future(move || async move {
+        debug!("Creating future for store");
         //     let mut recv_state = handle2.subscribe_to_state();
         //     // let mut recv_state = Rc::try_unwrap(recv_state).unwrap();
         //     // let mut recv_state = recv_state.clone();
@@ -412,9 +495,11 @@ where
                 }
             }
         }
+        debug!("Future for store is exiting");
     });
-    UseStore { handle, state }
+    UseStore { future, handle, state }
 }
+*/
 
 impl<OT: OdysseyType, T: CRDT<Time = OT::Time>> UseStore<OT, T>
 where
