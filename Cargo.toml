@@ -15,8 +15,9 @@ futures = "*"
 keyboard-types = "*"
 im = "15.1.0"
 manganis = "*"
-odyssey-core = {path = "/Users/james/Documents/Projects/odyssey/odyssey-core"}
-odyssey-crdt = {path = "/Users/james/Documents/Projects/odyssey/odyssey-crdt"}
+odyssey-core = {git = "https://github.com/jprider63/odyssey.git", rev="c33d94154983bcf8b09b3a745f09024103a6b317"}
+odyssey-crdt = {git = "https://github.com/jprider63/odyssey.git", rev="c33d94154983bcf8b09b3a745f09024103a6b317"}
+typeable = {git = "https://github.com/jprider63/odyssey.git", rev="c33d94154983bcf8b09b3a745f09024103a6b317", features=["im"]}
 serde = "*"
 tauri = "2.2.4"
 tracing = "*"
@@ -26,4 +27,3 @@ tracing-subscriber = "*"
 tokio = {version="*", features=["rt","rt-multi-thread","net"]}
 tokio-util = {version="*", features=["codec"]}
 
-typeable = {path = "/Users/james/Documents/Projects/odyssey/typeable", features = ["serde", "im"]}
