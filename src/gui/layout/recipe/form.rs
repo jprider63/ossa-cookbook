@@ -1,5 +1,4 @@
 use dioxus::prelude::*;
-use keyboard_types::Key;
 
 use crate::gui::form::{FieldLabel, TextField};
 use crate::state::Recipe;

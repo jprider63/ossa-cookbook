@@ -7,21 +7,23 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.3.10", features = ["derive"] }
-dioxus = {version = "0.6.1"}
-dioxus-desktop = "0.6.1"
-dioxus-heroicons = {git = "https://github.com/jprider63/dioxus-heroicons.git", rev="454275f44cff27306ddd55601129a495aeb8c92c"}
-dioxus_markdown = {git = "https://github.com/jprider63/dioxus-markdown.git", rev="11fe6502896870bf328b4c6475aaf48112e83cdd"}
+dioxus = {git = "https://github.com/jprider63/dioxus.git", rev="cd3ff6d3644347163c249da8293a76db02044d03"} # {version = "0.6.3"}
+dioxus-desktop = {git = "https://github.com/jprider63/dioxus.git", rev="cd3ff6d3644347163c249da8293a76db02044d03"} # {version = "0.6.3"}
+dioxus-heroicons = {git = "https://github.com/jprider63/dioxus-heroicons.git", rev="0407484985665d5a4ebac3fec045170c18e447ed"} # rev="454275f44cff27306ddd55601129a495aeb8c92c"}
+dioxus_markdown = {git = "https://github.com/jprider63/dioxus-markdown.git", rev="e72cea3f58ece80268241f1bc8b025c2b63d9324"}
 futures = "*"
 keyboard-types = "*"
 im = "15.1.0"
 manganis = "*"
-odyssey-core = {path = "/Users/james/Documents/Projects/odyssey/odyssey-core"}
-odyssey-crdt = {path = "/Users/james/Documents/Projects/odyssey/odyssey-crdt"}
+odyssey-core = {git = "https://github.com/jprider63/odyssey.git", rev="37f28d45b7671b9368e2227946acfe91331449c1"}
+odyssey-crdt = {git = "https://github.com/jprider63/odyssey.git", rev="37f28d45b7671b9368e2227946acfe91331449c1"}
+typeable = {git = "https://github.com/jprider63/odyssey.git", rev="37f28d45b7671b9368e2227946acfe91331449c1", features=["im"]}
 serde = "*"
-tauri = "*"
+tauri = "2.2.4"
+tracing = "*"
+tracing-subscriber = "*"
 
 # tmp?
 tokio = {version="*", features=["rt","rt-multi-thread","net"]}
 tokio-util = {version="*", features=["codec"]}
 
-typeable = {path = "/Users/james/Documents/Projects/odyssey/typeable"}

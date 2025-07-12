@@ -7,11 +7,12 @@ use dioxus_markdown::Markdown;
 // TODO: Fix outline icons.
 
 use odyssey_crdt::map::twopmap::TwoPMapOp;
+use tracing::{debug, error, warn};
 
 use crate::gui::layout::recipe::form::{recipe_form, valid_recipe_form};
 use crate::state::{Cookbook, CookbookId, CookbookOp, Recipe, RecipeId, RecipeOp, State};
 
-use crate::{CookbookApplication, UseStore};
+use crate::{new_store_in_scope, CookbookApplication, OdysseyProp, UseStore};
 
 enum View {
     Login,
@@ -20,12 +21,14 @@ enum View {
     CookbookRecipe(CookbookId, RecipeId),
     CookbookRecipeNew(CookbookId),
     CookbookRecipeEdit(CookbookId, RecipeId),
+    ConnectToPeer,
 }
 
 fn is_cookbook_selected(view: &View, cid: CookbookId) -> bool {
     match view {
         View::Login => false,
         View::NoSelection => false,
+        View::ConnectToPeer => false,
         View::Cookbook(vid) => *vid == cid,
         View::CookbookRecipe(vid, _rid) => *vid == cid,
         View::CookbookRecipeNew(vid) => *vid == cid,
@@ -35,7 +38,10 @@ fn is_cookbook_selected(view: &View, cid: CookbookId) -> bool {
 
 #[component]
 // pub fn layout(cx: Scope, state: Vec<UseStore<CookbookApplication, Cookbook>>) -> Element {
-pub fn layout(state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>) -> Element {
+pub fn layout(
+    state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>,
+    root_scope: ScopeId,
+) -> Element {
     let view = use_signal(|| View::NoSelection);
 
     let v = view.read();
@@ -67,6 +73,11 @@ pub fn layout(state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>) -> El
             cookbook_id: *cookbookid,
             recipe_id: recipeid.clone()
         }),
+        View::ConnectToPeer => rsx!(ConnectToPeerView {
+            view: view,
+            state: state,
+            root_scope,
+        }),
     };
     rsx!(
         div {
@@ -79,7 +90,7 @@ pub fn layout(state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>) -> El
 #[component]
 fn NoSelectionView(
     view: Signal<View>,
-    state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>,
+    state: Signal<State>,
 ) -> Element {
     rsx! (
         Sidebar { view: view, state: state }
@@ -102,7 +113,7 @@ fn get_cookbook_store(
     if cookbook.is_none() {
         // Cookbook not found, so set no selection.
         // TODO: Log this and display error.
-        println!("Cookbook {} not found.", cookbook_id);
+        error!("Cookbook {} not found.", cookbook_id);
 
         view.set(View::NoSelection);
     }
@@ -114,7 +125,7 @@ fn get_recipe(mut view: Signal<View>, cookbook: &Cookbook, recipe_id: RecipeId) 
     if recipe.is_none() {
         // Recipe not found, so set no selection.
         // TODO: Log this and display error.
-        println!("Recipe {:?} not found.", recipe_id);
+        error!("Recipe {:?} not found.", recipe_id);
 
         view.set(View::NoSelection);
     }
@@ -131,7 +142,7 @@ fn CookbookView(view: Signal<View>, state: Signal<State>, cookbook_id: CookbookI
             RecipePill {
                 view: view,
                 cookbook_id: cookbook_id,
-                recipe_id: recipe_id.clone(),
+                recipe_id: *recipe_id,
                 recipe: recipe.clone()
             } // TODO: Can we avoid this clone?
         )
@@ -268,9 +279,9 @@ fn CookbookRecipeNewView(
         Sidebar { view: view, state: state }
         div {
             class: "content",
-                p {
-                    "TODO: Create recipe function"
-                }
+            p {
+                "TODO: Create recipe function"
+            }
         }
     )
 }
@@ -325,7 +336,7 @@ fn CookbookRecipeEditView(
                 })
             })
             .collect();
-        println!("ops: {:?}", ops);
+        debug!("ops: {:?}", ops);
         cookbook_store.apply_batch(parent_header_ids.clone(), ops);
 
         // TODO: Send CRDT operations
@@ -348,7 +359,7 @@ fn CookbookRecipeEditView(
                     class: "flex-1 flex justify-start mr-auto whitespace-nowrap",
                     div {
                         class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
-                        onclick: move |_e| {view.set(View::CookbookRecipe(cookbook_id, recipe_id.clone()))},
+                        onclick: move |_e| {view.set(View::CookbookRecipe(cookbook_id, recipe_id))},
                         Icon {
                             class: "w-6 h-6",
                             icon: Shape::ChevronLeft,
@@ -412,7 +423,7 @@ fn RecipePill(
 #[component]
 fn Sidebar(
     view: Signal<View>,
-    state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>,
+    state: Signal<State>,
 ) -> Element {
     let cookbooks = state.read();
     let cookbooks = cookbooks
@@ -438,11 +449,12 @@ fn Sidebar(
                     SidebarHeader { title: "COOKBOOKS" }
                     { cookbooks }
                     SidebarHeader { title: "MEAL PLANNER" }
-                    SidebarItem   { title: "Weekly meals", icon: Shape::PencilSquare, onclick: |_e| {println!("TODO!")}, selected: false }
-                    SidebarItem   { title: "Thanksgiving", icon: Shape::PencilSquare, selected: false, onclick: |_e| {println!("TODO!")} }
+                    SidebarItem   { title: "Weekly meals", icon: Shape::PencilSquare, onclick: |_e| {warn!("TODO!")}, selected: false }
+                    SidebarItem   { title: "Thanksgiving", icon: Shape::PencilSquare, selected: false, onclick: |_e| {warn!("TODO!")} }
                     SidebarHeader { title: "SETTINGS" }
-                    SidebarItem   { title: "Account", icon: Shape::User, selected: false, onclick: |_e| {println!("TODO!")} }
-                    SidebarItem   { title: "Logout", icon: Shape::ArrowRightOnRectangle, selected: false, onclick: |_e| {println!("TODO!")} }
+                    SidebarItem   { title: "Account", icon: Shape::User, selected: false, onclick: |_e| {warn!("TODO!")} }
+                    SidebarItem   { title: "Logout", icon: Shape::ArrowRightOnRectangle, selected: false, onclick: |_e| {warn!("TODO!")} }
+                    SidebarItem   { title: "Connections (TMP)", icon: Shape::Users, selected: false, onclick: move |_e| { view.set(View::ConnectToPeer) } }
                 }
             }
         }
@@ -495,6 +507,80 @@ pub fn SidebarItem<'a>(props: SidebarItemProps) -> Element {
                 span {
                     class: "ml-2 text-sm tracking-wide truncate",
                     "{props.title}"
+                }
+            }
+        }
+    )
+}
+
+#[component]
+fn ConnectToPeerView(
+    view: Signal<View>,
+    state: Signal<State>,
+    root_scope: ScopeId,
+) -> Element {
+    let odyssey = use_context::<OdysseyProp<CookbookApplication>>().odyssey;
+    let connect_handler = move |_| {
+        odyssey.connect_to_peer_ipv4("127.0.0.1:8080".parse().unwrap());
+    };
+
+    rsx! (
+        Sidebar { view: view, state: state }
+        div {
+            class: "content",
+            div {
+                class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
+                onclick: connect_handler,
+                span {
+                    "Connect to peer 127.0.0.1:8080"
+                }
+            }
+            ConnectToStoreView {
+                state,
+                root_scope,
+            }
+        }
+    )
+}
+
+#[component]
+fn ConnectToStoreView(
+    state: Signal<State>,
+    root_scope: ScopeId,
+) -> Element {
+    use crate::gui::form::TextField;
+
+    pub fn validate_store_id(store_id: &str) -> Result<(), &'static str> {
+        Ok(())
+    }
+
+    let mut store_id = use_signal(|| "".to_string());
+
+    // let odyssey = use_context::<OdysseyProp<CookbookApplication>>().odyssey;
+    let connect_handler = move |_| {
+        let store_id = store_id.peek().parse().expect("TODO");
+        debug!("Connecting to store: {:?}", store_id);
+        let recipe_store = new_store_in_scope(root_scope, |odyssey| {
+        // let recipe_store = use_store(|odyssey| {
+            odyssey.connect_to_store::<Cookbook>(store_id) // , MemoryStorage::new());
+        }).expect("Failed to connect_to_store");
+        state.push(recipe_store);
+    };
+
+    rsx! (
+        div {
+            TextField {
+                placeholder: "Store Id",
+                id: "store_id",
+                value: store_id,
+                oninput: move |evt: Event<FormData>| store_id.set(evt.value()),
+                validation_fn: validate_store_id,
+            }
+            div {
+                class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
+                onclick: connect_handler,
+                span {
+                    "Connect to store"
                 }
             }
         }

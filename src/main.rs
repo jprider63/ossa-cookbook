@@ -1,20 +1,23 @@
 use clap::Parser;
 use dioxus::prelude::*;
+use dioxus_desktop::muda::{Menu, PredefinedMenuItem, Submenu};
 // use dioxus_desktop::tao::menu::{AboutMetadata, MenuBar, MenuItem, MenuItemAttributes};
 use futures::StreamExt;
-use odyssey_core::network::p2p::{P2PManager, P2PSettings};
 use odyssey_core::network::protocol::ecg_sync;
 use odyssey_core::storage::memory::MemoryStorage;
-use odyssey_core::store::ecg::v0::{Header, HeaderId, OperationId};
+use odyssey_core::store::ecg::v0::{Body, Header, HeaderId, OperationId};
 use odyssey_core::store::ecg::{self, ECGBody, ECGHeader};
 use odyssey_core::util::Sha256Hash;
 use odyssey_core::{core::OdysseyType, Odyssey, OdysseyConfig};
 use odyssey_crdt::{map::twopmap::TwoPMap, register::LWW, time::LamportTimestamp, CRDT};
 use serde::Serialize;
+use tracing::{debug, trace};
 use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::collections::BTreeSet;
+use std::future::Future;
 use std::net::{Ipv4Addr, SocketAddrV4};
+use std::panic::Location;
 use std::rc::Rc;
 
 use crate::state::*;
@@ -68,6 +71,9 @@ const app_name: &str = "Odyssey Cookbook";
 // const CSS: &str = manganis::mg!(file("./dist/style.css"));
 
 fn main() {
+    // Turn on logging.
+    tracing_subscriber::fmt::init();
+
     let args = cli::Arguments::parse();
 
     // use typeable::Typeable;
@@ -102,19 +108,19 @@ fn main() {
     //     cli::run_client();
     // }
 
-    // let mut about_menu = MenuBar::new();
-    // about_menu.add_native_item(MenuItem::About(app_name.into(), AboutMetadata::default()));
-    // about_menu.add_native_item(MenuItem::Separator);
-    // about_menu.add_native_item(MenuItem::Hide);
-    // about_menu.add_native_item(MenuItem::HideOthers);
-    // about_menu.add_native_item(MenuItem::ShowAll);
-    // about_menu.add_native_item(MenuItem::Separator);
-    // about_menu.add_native_item(MenuItem::Quit);
+    let mut about_menu = Submenu::new(app_name, true);
+    about_menu.append(&PredefinedMenuItem::about(None, None)).expect("TODO");
+    about_menu.append(&PredefinedMenuItem::separator()).expect("TODO");
+    about_menu.append(&PredefinedMenuItem::hide(None)).expect("TODO");
+    about_menu.append(&PredefinedMenuItem::hide_others(None)).expect("TODO");
+    about_menu.append(&PredefinedMenuItem::show_all(None)).expect("TODO");
+    about_menu.append(&PredefinedMenuItem::separator()).expect("TODO");
+    about_menu.append(&PredefinedMenuItem::quit(None)).expect("TODO");
 
-    // let mut file_menu = MenuBar::new();
+    let mut file_menu = Submenu::new("File", true);
     // file_menu.add_native_item(MenuItem::CloseWindow);
 
-    // let mut edit_menu = MenuBar::new();
+    let mut edit_menu = Submenu::new("Edit", true);
     // edit_menu.add_native_item(MenuItem::Undo);
     // edit_menu.add_native_item(MenuItem::Redo);
     // edit_menu.add_native_item(MenuItem::Separator);
@@ -124,10 +130,10 @@ fn main() {
     // edit_menu.add_native_item(MenuItem::Separator);
     // edit_menu.add_native_item(MenuItem::SelectAll);
 
-    // let view_menu = MenuBar::new();
+    let view_menu = Submenu::new("View", true);
     // // TODO: Hide tab bar items.
 
-    // let mut window_menu = MenuBar::new();
+    let mut window_menu = Submenu::new("Window", true);
     // window_menu.add_native_item(MenuItem::Minimize);
     // window_menu.add_native_item(MenuItem::Zoom);
     // // window_menu.add_native_item(MenuItem::Separator);
@@ -135,20 +141,20 @@ fn main() {
     // // window_menu.add_native_item(MenuItem::Window);
     // // window_menu.add_native_item(MenuItem::CloseWindow);
 
-    // let mut help_menu = MenuBar::new();
+    let mut help_menu = Submenu::new("Help", true);
     // help_menu.add_item(MenuItemAttributes::new(&format!("{} Help", app_name)));
 
-    // let mut menu = MenuBar::new();
-    // menu.add_submenu( app_name, true, about_menu);
-    // menu.add_submenu( "File", true, file_menu);
-    // menu.add_submenu( "Edit", true, edit_menu);
-    // menu.add_submenu( "View", true, view_menu);
-    // menu.add_submenu( "Window", true, window_menu);
-    // menu.add_submenu( "Help", true, help_menu);
+    let mut menu = Menu::new();
+    menu.append(&about_menu).expect("TODO");
+    menu.append(&file_menu).expect("TODO");
+    menu.append(&edit_menu).expect("TODO");
+    menu.append(&view_menu).expect("TODO");
+    menu.append(&window_menu).expect("TODO");
+    menu.append(&help_menu).expect("TODO");
 
     let w = dioxus_desktop::WindowBuilder::new().with_title(app_name);
     // .with_menu(menu); // TODO XXX
-    let c = dioxus_desktop::Config::new().with_window(w);
+    let c = dioxus_desktop::Config::new().with_window(w).with_menu(menu);
     // let odyssey_prop = OdysseyProp::new(odyssey);
     // dioxus_desktop::launch_with_props(app, odyssey_prop, c);
     dioxus_desktop::launch::launch(
@@ -189,7 +195,7 @@ fn initial_demo_state() -> Cookbook {
         // image: vec![],
     };
     // TODO: We should receive this from create_store?
-    let ecg_state: ecg::State<Header<Sha256Hash, LWW<Time, ()>>, LWW<Time, ()>> = ecg::State::new();
+    let ecg_state: ecg::State<Header<Sha256Hash>, LWW<Time, ()>> = ecg::State::new();
 
     let recipes = TwoPMap::new();
     let recipes = recipes.apply(&ecg_state, l.t(), TwoPMap::insert(recipe.clone()));
@@ -240,6 +246,7 @@ fn app() -> Element {
     //     cookbooks: vec![recipe_store],
     // }; // JP: Include map from cookbook StoreIds to Cookbooks?
 
+    let root_scope = current_scope_id().expect("Failed to retrieve root scope");
     rsx! (
         head {
             style {{ include_str!("../dist/style.css") }}
@@ -249,16 +256,16 @@ fn app() -> Element {
             // }
         }
 
-        gui::layout::layout { state: state }
+        gui::layout::layout { state: state, root_scope }
     )
 }
 
 // #[derive(Props, PartialEq)]
-struct OdysseyProp<A: 'static> {
+struct OdysseyProp<A: OdysseyType + 'static> {
     odyssey: Rc<Odyssey<A>>,
 }
 
-impl<A: 'static> Clone for OdysseyProp<A> {
+impl<A: OdysseyType + 'static> Clone for OdysseyProp<A> {
     fn clone(&self) -> Self {
         OdysseyProp {
             odyssey: self.odyssey.clone(),
@@ -266,7 +273,7 @@ impl<A: 'static> Clone for OdysseyProp<A> {
     }
 }
 
-impl<A> OdysseyProp<A> {
+impl<A: OdysseyType> OdysseyProp<A> {
     fn new(odyssey: Odyssey<A>) -> Self {
         OdysseyProp {
             odyssey: Rc::new(odyssey),
@@ -277,37 +284,53 @@ impl<A> OdysseyProp<A> {
 enum CookbookApplication {}
 
 impl OdysseyType for CookbookApplication {
-    type StoreId = (); // TODO
+    type Hash = Sha256Hash;
+    type StoreId = Sha256Hash; // TODO
                        // type ECGHeader<T: CRDT<Op: Serialize, Time = OperationId<HeaderId<Sha256Hash>>>> = Header<Sha256Hash, T>;
                        // type ECGHeader<T: CRDT<Time = OperationId<HeaderId<Sha256Hash>>>> = Header<Sha256Hash, T>;
-    type ECGHeader<T: CRDT<Time = Self::Time, Op: Serialize>> = Header<Sha256Hash, T>;
+    type ECGHeader = Header<Sha256Hash>;
     // type ECGHeader<T: CRDT<Op: Serialize>> = Header<Sha256Hash, T>;
+    type ECGBody<T: CRDT> = Body<Sha256Hash, T>; // : CRDT<Time = Self::Time, Op: Serialize>> = Body<Sha256Hash, T>;
 
     type Time = OperationId<HeaderId<Sha256Hash>>;
 
-    type CausalState<T: CRDT<Time = Self::Time, Op: Serialize>> = ecg::State<Self::ECGHeader<T>, T>;
+    type CausalState<T: CRDT<Time = Self::Time, Op: Serialize>> = ecg::State<Self::ECGHeader, T>;
     // type ECGHeader<T> = Header<Sha256Hash, T>
     //     where T: CRDT<Time = OperationId<HeaderId<Sha256Hash>>>;
     // type ECGHeader<T> = Header<Sha256Hash, T>;
 
     fn to_causal_state<'a, T: CRDT<Time = Self::Time, Op: Serialize>>(
-        st: &'a ecg::State<Self::ECGHeader<T>, T>,
+        st: &'a ecg::State<Self::ECGHeader, T>,
     ) -> &'a Self::CausalState<T> {
         st
     }
 }
 
 // TODO: Create `odyssey-dioxus` crate?
-use odyssey_core::core::{StateUpdate, StoreHandle};
-struct UseStore<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize> + 'static> {
+use odyssey_core::core::StoreHandle;
+use odyssey_core::store::StateUpdate;
+pub struct UseStore<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize> + 'static> {
+    future: Task,
     handle: Rc<RefCell<StoreHandle<OT, T>>>,
+    // handle: StoreHandle<OT, T>,
     state: Signal<Option<StoreState<OT, T>>>,
     // peers, connections, etc
 }
 
+// TODO: Provide way to gracefully drop UseStore
+// impl<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize> + 'static> Drop for UseStore<OT, T> {
+//     fn drop(&mut self) {
+//         // JP: Gracefully shutdown store receiver somehow?
+//         self.future.cancel();
+// 
+//         self.state.manually_drop(); // JP: Is this needed?
+//     }
+// }
+
 impl<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize>> Clone for UseStore<OT, T> {
     fn clone(&self) -> Self {
         UseStore {
+            future: self.future.clone(),
             handle: self.handle.clone(),
             state: self.state.clone(),
         }
@@ -317,12 +340,12 @@ impl<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize>> Clone f
 // #[derive(Clone)]
 struct StoreState<OT: OdysseyType, T: CRDT<Time = OT::Time, Op: Serialize>> {
     state: T,
-    ecg: ecg::State<OT::ECGHeader<T>, T>,
+    ecg: ecg::State<OT::ECGHeader, T>,
 }
 
 impl<OT: OdysseyType, T: CRDT<Time = OT::Time, Op: Serialize> + Clone> Clone for StoreState<OT, T>
 where
-    <OT as OdysseyType>::ECGHeader<T>: Clone,
+    <OT as OdysseyType>::ECGHeader: Clone,
 {
     fn clone(&self) -> Self {
         StoreState {
@@ -332,8 +355,91 @@ where
     }
 }
 
-// fn use_store<OT: OdysseyType, T>(handle: StoreHandle<OT, T>) -> UseStore<OT, T> {
-fn use_store<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize>, F>(
+pub fn use_store<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize>, F>(
+    build_store_handle: F,
+) -> UseStore<OT, T>
+where
+    F: FnOnce(&Odyssey<CookbookApplication>) -> StoreHandle<OT, T>,
+{
+    let scope = current_scope_id().expect("Failed to get scope id");
+    let odyssey = use_context::<OdysseyProp<CookbookApplication>>().odyssey;
+    let caller = std::panic::Location::caller();
+    use_hook(|| new_store_helper(&odyssey, scope, caller, build_store_handle).unwrap())
+}
+
+fn new_store_helper<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize>, F>(
+    odyssey: &Odyssey<CookbookApplication>,
+    scope: ScopeId,
+    caller: &'static Location,
+    build_store_handle: F,
+) -> Option<UseStore<OT, T>>
+where
+    F: FnOnce(&Odyssey<CookbookApplication>) -> StoreHandle<OT, T>,
+{
+    let mut handle = build_store_handle(odyssey);
+    let mut recv_st = handle.subscribe_to_state();
+
+    // use_hook(|| Signal::new_maybe_sync_in_scope_with_caller(f(), scope, caller))
+    let mut state = Signal::new_maybe_sync_in_scope_with_caller(None, scope, caller);
+
+    let future = spawn_in_scope(scope, async move {
+        debug!("Creating future for store");
+        //     let mut recv_state = handle2.subscribe_to_state();
+        //     // let mut recv_state = Rc::try_unwrap(recv_state).unwrap();
+        //     // let mut recv_state = recv_state.clone();
+        //     // let recv_state = Rc::get_mut(&mut recv_state).unwrap();
+        while let Some(msg) = recv_st.recv().await {
+            match msg {
+                StateUpdate::Snapshot {
+                    snapshot,
+                    ecg_state,
+                } => {
+                    debug!("Received state!");
+                    let s = StoreState {
+                        state: snapshot,
+                        ecg: ecg_state,
+                    };
+                    state.set(Some(s));
+                }
+                StateUpdate::Downloading {percent} => {
+                    debug!("Store is downloading ({percent}%)");
+                    state.set(None);
+                }
+            }
+        }
+        debug!("Future for store is exiting");
+    });
+
+    let Some(future) = future else {
+        state.manually_drop(); // JP: Is this needed?
+        return None;
+    };
+
+    let handle = Rc::new(RefCell::new(handle));
+    Some(UseStore { future, handle, state })
+}
+
+pub fn new_store_in_scope<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize>, F>(
+    scope: ScopeId,
+    build_store_handle: F,
+) -> Option<UseStore<OT, T>>
+where
+    F: FnOnce(&Odyssey<CookbookApplication>) -> StoreHandle<OT, T>,
+{
+    let odyssey = use_context::<OdysseyProp<CookbookApplication>>().odyssey;
+    let caller = std::panic::Location::caller();
+    new_store_helper(&odyssey, scope, caller, build_store_handle)
+}
+
+/*
+fn use_signal_in_scope<T: 'static>(scope: ScopeId, f: impl FnOnce() -> T) -> Signal<T, UnsyncStorage> {
+    let caller = std::panic::Location::caller();
+    use_hook(|| Signal::new_maybe_sync_in_scope_with_caller(f(), scope, caller))
+}
+
+// JP: Is this usage of ScopeId correct? Will this be deallocated properly?
+fn use_store_in_scope<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize>, F>(
+    scope: ScopeId,
     build_store_handle: F,
 ) -> UseStore<OT, T>
 where
@@ -351,10 +457,11 @@ where
         let h = Rc::new(RefCell::new(h)); // JP: Annoyingly required since dioxus requires clone... XXX
                                           // let st = Rc::new(st); // JP: Annoyingly required since dioxus requires clone... XXX
                                           // let recv_st = Rc::new(recv_st); // JP: Annoyingly required since dioxus requires clone... XXX
-        let recv_st = CopyValue::new(recv_st); // JP: Annoyingly required since dioxus requires clone... XXX
+        let recv_st = CopyValue::new_in_scope(recv_st, scope); // JP: Annoyingly required since dioxus requires clone... XXX
         (h, recv_st)
     });
-    let mut state = use_signal(|| None);
+    // let mut state = use_signal(|| None);
+    let mut state = use_signal_in_scope(scope, || None);
     // let mut state: Signal<T> = use_signal(|| {
     //     // let recv_state = Rc::get_mut(&mut recv_state).unwrap();
     //     let init_st = recv_state.write().blocking_recv().unwrap();
@@ -363,7 +470,8 @@ where
     // });
     // let handle2 = handle.clone();
     // TODO...
-    use_future(move || async move {
+    let future = use_future(move || async move {
+        debug!("Creating future for store");
         //     let mut recv_state = handle2.subscribe_to_state();
         //     // let mut recv_state = Rc::try_unwrap(recv_state).unwrap();
         //     // let mut recv_state = recv_state.clone();
@@ -374,18 +482,24 @@ where
                     snapshot,
                     ecg_state,
                 } => {
-                    println!("Received state!");
+                    debug!("Received state!");
                     let s = StoreState {
                         state: snapshot,
                         ecg: ecg_state,
                     };
                     state.set(Some(s));
                 }
+                StateUpdate::Downloading {percent} => {
+                    debug!("Store is downloading ({percent}%)");
+                    state.set(None);
+                }
             }
         }
+        debug!("Future for store is exiting");
     });
-    UseStore { handle, state }
+    UseStore { future, handle, state }
 }
+*/
 
 impl<OT: OdysseyType, T: CRDT<Time = OT::Time>> UseStore<OT, T>
 where
@@ -395,7 +509,7 @@ where
     pub fn get_current_state(&self) -> Option<T>
     where
         T: Clone,
-        <OT as OdysseyType>::ECGHeader<T>: Clone,
+        <OT as OdysseyType>::ECGHeader: Clone,
     {
         self.state.cloned().map(|s| s.state)
     }
@@ -403,29 +517,30 @@ where
     pub fn get_current_store_state(&self) -> Option<StoreState<OT, T>>
     where
         T: Clone,
-        <OT as OdysseyType>::ECGHeader<T>: Clone,
+        <OT as OdysseyType>::ECGHeader: Clone,
     {
         self.state.cloned()
     }
 
     pub fn apply(
         &mut self,
-        parents: BTreeSet<<<OT as OdysseyType>::ECGHeader<T> as ECGHeader<T>>::HeaderId>,
+        parents: BTreeSet<<<OT as OdysseyType>::ECGHeader as ECGHeader>::HeaderId>,
         op: T::Op,
     ) -> T::Time
     where
-        <<OT as OdysseyType>::ECGHeader<T> as ECGHeader<T>>::Body: ECGBody<T>,
+        // <<OT as OdysseyType>::ECGHeader as ECGHeader>::Body: ECGBody<T>,
+        OT::ECGBody<T>: ECGBody<T, Header = OT::ECGHeader>,
     {
         (*self.handle).borrow_mut().apply(parents, op)
     }
 
     pub fn apply_batch(
         &mut self,
-        parents: BTreeSet<<<OT as OdysseyType>::ECGHeader<T> as ECGHeader<T>>::HeaderId>,
+        parents: BTreeSet<<<OT as OdysseyType>::ECGHeader as ECGHeader>::HeaderId>,
         op: Vec<T::Op>,
     ) -> Vec<T::Time>
     where
-        <<OT as OdysseyType>::ECGHeader<T> as ECGHeader<T>>::Body: ECGBody<T>,
+        OT::ECGBody<T>: ECGBody<T, Header = OT::ECGHeader>,
     {
         (*self.handle).borrow_mut().apply_batch(parents, op)
     }
