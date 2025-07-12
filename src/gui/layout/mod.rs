@@ -468,12 +468,13 @@ fn Sidebar(
                     class: "flex flex-col py-4 space-y-1",
                     SidebarHeader { title: "COOKBOOKS" }
                     { cookbooks }
-                    SidebarHeader { title: "MEAL PLANNER" }
-                    SidebarItem   { title: "Weekly meals", icon: Shape::PencilSquare, onclick: |_e| {warn!("TODO!")}, selected: false }
-                    SidebarItem   { title: "Thanksgiving", icon: Shape::PencilSquare, selected: false, onclick: |_e| {warn!("TODO!")} }
-                    SidebarHeader { title: "SETTINGS" }
-                    SidebarItem   { title: "Account", icon: Shape::User, selected: false, onclick: |_e| {warn!("TODO!")} }
-                    SidebarItem   { title: "Logout", icon: Shape::ArrowRightOnRectangle, selected: false, onclick: |_e| {warn!("TODO!")} }
+                    // SidebarHeader { title: "MEAL PLANNER" }
+                    // SidebarItem   { title: "Weekly meals", icon: Shape::PencilSquare, onclick: |_e| {warn!("TODO!")}, selected: false }
+                    // SidebarItem   { title: "Thanksgiving", icon: Shape::PencilSquare, selected: false, onclick: |_e| {warn!("TODO!")} }
+                    // SidebarHeader { title: "SETTINGS" }
+                    // SidebarItem   { title: "Account", icon: Shape::User, selected: false, onclick: |_e| {warn!("TODO!")} }
+                    // SidebarItem   { title: "Logout", icon: Shape::ArrowRightOnRectangle, selected: false, onclick: |_e| {warn!("TODO!")} }
+                    SidebarHeader { title: "TEMPORARY" }
                     SidebarItem   { title: "Connections (TMP)", icon: Shape::Users, selected: false, onclick: move |_e| { view.set(View::ConnectToPeer) } }
                 }
             }
