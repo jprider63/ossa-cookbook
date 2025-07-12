@@ -629,9 +629,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.40"
+version = "4.5.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "40b6887a1d8685cebccf115538db5c0efe625ccac9696ad45c409d96566e910f"
+checksum = "be92d32e80243a54711e5d7ce823c35c41c9d929dc4ab58e1276f625841aadf9"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -639,9 +639,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.5.40"
+version = "4.5.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0c66c08ce9f0c698cbce5c0279d0bb6ac936d8674174fe48f736533b964f59e"
+checksum = "707eab41e9622f9139419d573eca0900137718000c517d47da73045f54331c3d"
 dependencies = [
  "anstream",
  "anstyle",
@@ -651,9 +651,9 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
-version = "4.5.40"
+version = "4.5.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2c7947ae4cc3d851207c1adb5b5e260ff0cca11446b1d6d1423788e442257ce"
+checksum = "ef4f52386a59ca4c860f7393bcf8abd8dfd91ecccc0f774635ff68e92eeef491"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -1014,9 +1014,9 @@ dependencies = [
 
 [[package]]
 name = "curve25519-dalek"
-version = "4.1.3"
+version = "4.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97fb8b7c4503de7d6ae7b42ab72a5a59857b4c937ec27a3d4539dba95b5ab2be"
+checksum = "373b7c5dbd637569a2cca66e8d66b8c446a1e7bf064ea321d265d7b3dfe7c97e"
 dependencies = [
  "cfg-if",
  "cpufeatures",
@@ -1647,9 +1647,9 @@ dependencies = [
 
 [[package]]
 name = "ed25519-dalek"
-version = "2.1.1"
+version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a3daa8e81a3963a60642bcc1f90a670680bd4a77535faa384e9d1c79d620871"
+checksum = "70e796c081cee67dc755e1a36a0a172b897fab85fc3f6bc48307991f64e4eca9"
 dependencies = [
  "curve25519-dalek",
  "ed25519",
@@ -1675,7 +1675,7 @@ dependencies = [
  "cc",
  "memchr",
  "rustc_version",
- "toml 0.9.0",
+ "toml 0.9.2",
  "vswhom",
  "winreg",
 ]
@@ -1808,9 +1808,9 @@ dependencies = [
 
 [[package]]
 name = "fiat-crypto"
-version = "0.2.9"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "28dea519a9695b9977216879a3ebfddf92f1c08c05d984f8996aecd6ecdc811d"
+checksum = "64cd1e32ddd350061ae6edb1b082d7c54915b5c672c389143b9a63403a109f24"
 
 [[package]]
 name = "field-offset"
@@ -3671,7 +3671,7 @@ dependencies = [
 [[package]]
 name = "odyssey-core"
 version = "0.1.0"
-source = "git+https://github.com/jprider63/odyssey.git?rev=c33d94154983bcf8b09b3a745f09024103a6b317#c33d94154983bcf8b09b3a745f09024103a6b317"
+source = "git+https://github.com/jprider63/odyssey.git?rev=37f28d45b7671b9368e2227946acfe91331449c1#37f28d45b7671b9368e2227946acfe91331449c1"
 dependencies = [
  "async-recursion",
  "async-session-types",
@@ -3700,7 +3700,7 @@ dependencies = [
 [[package]]
 name = "odyssey-crdt"
 version = "0.1.0"
-source = "git+https://github.com/jprider63/odyssey.git?rev=c33d94154983bcf8b09b3a745f09024103a6b317#c33d94154983bcf8b09b3a745f09024103a6b317"
+source = "git+https://github.com/jprider63/odyssey.git?rev=37f28d45b7671b9368e2227946acfe91331449c1#37f28d45b7671b9368e2227946acfe91331449c1"
 dependencies = [
  "im",
  "serde",
@@ -5706,9 +5706,9 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "0.9.0"
+version = "0.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f271e09bde39ab52250160a67e88577e0559ad77e9085de6e9051a2c4353f8f8"
+checksum = "ed0aee96c12fa71097902e0bb061a5e1ebd766a6636bb605ba401c45c1650eac"
 dependencies = [
  "indexmap 2.10.0",
  "serde",
@@ -5716,7 +5716,7 @@ dependencies = [
  "toml_datetime 0.7.0",
  "toml_parser",
  "toml_writer",
- "winnow 0.7.11",
+ "winnow 0.7.12",
 ]
 
 [[package]]
@@ -5770,16 +5770,16 @@ dependencies = [
  "serde_spanned 0.6.9",
  "toml_datetime 0.6.11",
  "toml_write",
- "winnow 0.7.11",
+ "winnow 0.7.12",
 ]
 
 [[package]]
 name = "toml_parser"
-version = "1.0.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5c1c469eda89749d2230d8156a5969a69ffe0d6d01200581cdc6110674d293e"
+checksum = "97200572db069e74c512a14117b296ba0a80a30123fbbb5aa1f4a348f639ca30"
 dependencies = [
- "winnow 0.7.11",
+ "winnow 0.7.12",
 ]
 
 [[package]]
@@ -5790,9 +5790,9 @@ checksum = "5d99f8c9a7727884afe522e9bd5edbfc91a3312b36a77b5fb8926e4c31a41801"
 
 [[package]]
 name = "toml_writer"
-version = "1.0.0"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b679217f2848de74cabd3e8fc5e6d66f40b7da40f8e1954d92054d9010690fd5"
+checksum = "fcc842091f2def52017664b53082ecbbeb5c7731092bad69d2c63050401dfd64"
 
 [[package]]
 name = "tower"
@@ -5977,7 +5977,7 @@ dependencies = [
 [[package]]
 name = "typeable"
 version = "0.1.0"
-source = "git+https://github.com/jprider63/odyssey.git?rev=c33d94154983bcf8b09b3a745f09024103a6b317#c33d94154983bcf8b09b3a745f09024103a6b317"
+source = "git+https://github.com/jprider63/odyssey.git?rev=37f28d45b7671b9368e2227946acfe91331449c1#37f28d45b7671b9368e2227946acfe91331449c1"
 dependencies = [
  "im",
  "lazy_static",
@@ -5989,7 +5989,7 @@ dependencies = [
 [[package]]
 name = "typeable_derive"
 version = "0.1.0"
-source = "git+https://github.com/jprider63/odyssey.git?rev=c33d94154983bcf8b09b3a745f09024103a6b317#c33d94154983bcf8b09b3a745f09024103a6b317"
+source = "git+https://github.com/jprider63/odyssey.git?rev=37f28d45b7671b9368e2227946acfe91331449c1#37f28d45b7671b9368e2227946acfe91331449c1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -6994,9 +6994,9 @@ dependencies = [
 
 [[package]]
 name = "winnow"
-version = "0.7.11"
+version = "0.7.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74c7b26e3480b707944fc872477815d29a8e429d2f93a1ce000f5fa84a15cbcd"
+checksum = "f3edebf492c8125044983378ecb5766203ad3b4c2f7a922bd7dd207f6d443e95"
 dependencies = [
  "memchr",
 ]
