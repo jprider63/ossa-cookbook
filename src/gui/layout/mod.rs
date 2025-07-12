@@ -1,5 +1,7 @@
 pub mod recipe;
 
+use std::net::SocketAddrV4;
+
 use dioxus::events::MouseEvent;
 use dioxus::prelude::*;
 use dioxus_heroicons::{solid::Shape, Icon};
@@ -21,14 +23,14 @@ enum View {
     CookbookRecipe(CookbookId, RecipeId),
     CookbookRecipeNew(CookbookId),
     CookbookRecipeEdit(CookbookId, RecipeId),
-    ConnectToPeer,
+    Connections,
 }
 
 fn is_cookbook_selected(view: &View, cid: CookbookId) -> bool {
     match view {
         View::Login => false,
         View::NoSelection => false,
-        View::ConnectToPeer => false,
+        View::Connections => false,
         View::Cookbook(vid) => *vid == cid,
         View::CookbookRecipe(vid, _rid) => *vid == cid,
         View::CookbookRecipeNew(vid) => *vid == cid,
@@ -73,7 +75,7 @@ pub fn layout(
             cookbook_id: *cookbookid,
             recipe_id: recipeid.clone()
         }),
-        View::ConnectToPeer => rsx!(ConnectToPeerView {
+        View::Connections => rsx!(ConnectsView {
             view: view,
             state: state,
             root_scope,
@@ -475,7 +477,7 @@ fn Sidebar(
                     // SidebarItem   { title: "Account", icon: Shape::User, selected: false, onclick: |_e| {warn!("TODO!")} }
                     // SidebarItem   { title: "Logout", icon: Shape::ArrowRightOnRectangle, selected: false, onclick: |_e| {warn!("TODO!")} }
                     SidebarHeader { title: "TEMPORARY" }
-                    SidebarItem   { title: "Connections (TMP)", icon: Shape::Users, selected: false, onclick: move |_e| { view.set(View::ConnectToPeer) } }
+                    SidebarItem   { title: "Connections (TMP)", icon: Shape::Users, selected: false, onclick: move |_e| { view.set(View::Connections) } }
                 }
             }
         }
@@ -535,31 +537,68 @@ pub fn SidebarItem<'a>(props: SidebarItemProps) -> Element {
 }
 
 #[component]
-fn ConnectToPeerView(
+fn ConnectsView(
     view: Signal<View>,
     state: Signal<State>,
     root_scope: ScopeId,
 ) -> Element {
-    let odyssey = use_context::<OdysseyProp<CookbookApplication>>().odyssey;
-    let connect_handler = move |_| {
-        odyssey.connect_to_peer_ipv4("127.0.0.1:8080".parse().unwrap());
-    };
-
     rsx! (
         Sidebar { view: view, state: state }
         div {
             class: "content",
-            div {
-                class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
-                onclick: connect_handler,
-                span {
-                    "Connect to peer 127.0.0.1:8080"
-                }
+            ConnectToPeerView {
+                view,
+                state,
             }
             ConnectToStoreView {
                 view,
                 state,
                 root_scope,
+            }
+        }
+    )
+}
+
+#[component]
+fn ConnectToPeerView(
+    view: Signal<View>,
+    state: Signal<State>,
+) -> Element {
+    use crate::gui::form::TextField;
+
+    let mut address = use_signal(|| "127.0.0.1:8080".to_string());
+
+    let odyssey = use_context::<OdysseyProp<CookbookApplication>>().odyssey;
+    let connect_handler = move |_| {
+        odyssey.connect_to_peer_ipv4("127.0.0.1:8080".parse().unwrap());
+    };
+
+    pub fn validate_ipv4_address(address: &str) -> Result<(), &'static str> {
+        let res: Result<SocketAddrV4, _> = address.parse();
+        if let Err(e) = res {
+            // Err(format!("{e}"))
+            Err("Invalid IP Address")
+        } else {
+            Ok(())
+        }
+    }
+
+    rsx! (
+        div {
+            class: "p-3",
+            TextField {
+                placeholder: "Peer IP Address",
+                id: "peer_ip_address",
+                value: address,
+                oninput: move |evt: Event<FormData>| address.set(evt.value()),
+                validation_fn: validate_ipv4_address,
+            }
+            div {
+                class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
+                onclick: connect_handler,
+                span {
+                    "Connect to peer"
+                }
             }
         }
     )
@@ -594,6 +633,7 @@ fn ConnectToStoreView(
 
     rsx! (
         div {
+            class: "p-3",
             TextField {
                 placeholder: "Store Id",
                 id: "store_id",
