@@ -135,53 +135,65 @@ fn get_recipe(mut view: Signal<View>, cookbook: &Cookbook, recipe_id: RecipeId) 
 #[component]
 fn CookbookView(view: Signal<View>, state: Signal<State>, cookbook_id: CookbookId) -> Element {
     let cookbook_store = get_cookbook_store(view, state, cookbook_id).expect("TODO"); // ?;
-    let cookbook = cookbook_store.get_current_state().expect("TODO"); // ?;
+    if let Some(cookbook) = cookbook_store.get_current_state() {
 
-    let pills = cookbook.recipes.iter().map(|(recipe_id, recipe)| {
-        rsx!(
-            RecipePill {
-                view: view,
-                cookbook_id: cookbook_id,
-                recipe_id: *recipe_id,
-                recipe: recipe.clone()
-            } // TODO: Can we avoid this clone?
-        )
-    });
-    rsx! (
-        Sidebar { view: view, state: state }
-        div {
-            class: "content",
+        let pills = cookbook.recipes.iter().map(|(recipe_id, recipe)| {
+            rsx!(
+                RecipePill {
+                    view: view,
+                    cookbook_id: cookbook_id,
+                    recipe_id: *recipe_id,
+                    recipe: recipe.clone()
+                } // TODO: Can we avoid this clone?
+            )
+        });
+        rsx! (
+            Sidebar { view: view, state: state }
             div {
-                class: "flex justify-center",
-                h1 {
-                    class: "text-3xl font-bold mt-4 mb-6 text-center",
-                    "{cookbook.title.value()}"
-                }
-            }
-            div {
-                class: "flex flex-row flex-wrap",
-                { pills },
+                class: "content",
                 div {
-                    class: "basis-1/3",
+                    class: "flex justify-center",
+                    h1 {
+                        class: "text-3xl font-bold mt-4 mb-6 text-center",
+                        "{cookbook.title.value()}"
+                    }
+                }
+                div {
+                    class: "flex flex-row flex-wrap",
+                    { pills },
                     div {
-                        class: "recipe-card",
-                        onclick: move |_e| {view.set(View::CookbookRecipeNew(cookbook_id))},
+                        class: "basis-1/3",
                         div {
-                            class: "new-recipe",
-                            Icon {
-                                class: "w-14 h-14",
-                                icon: Shape::Plus,
+                            class: "recipe-card",
+                            onclick: move |_e| {view.set(View::CookbookRecipeNew(cookbook_id))},
+                            div {
+                                class: "new-recipe",
+                                Icon {
+                                    class: "w-14 h-14",
+                                    icon: Shape::Plus,
+                                }
                             }
-                        }
-                        p {
-                            class: "p-5 text-center",
-                            "New Recipe"
+                            p {
+                                class: "p-5 text-center",
+                                "New Recipe"
+                            }
                         }
                     }
                 }
             }
-        }
-    )
+        )
+    } else {
+        rsx! (
+            Sidebar { view: view, state: state }
+            div {
+                class: "content",
+                div {
+                    class: "flex justify-center items-center h-screen",
+                    "Downloading..."
+                }
+            }
+        )
+    }
 }
 
 #[component]
@@ -428,15 +440,23 @@ fn Sidebar(
     let cookbooks = state.read();
     let cookbooks = cookbooks
         .iter()
-        .filter_map(|cookbook_store| cookbook_store.get_current_state())
         .enumerate()
-        .map(|(i, cookbook)| {
-            rsx!(SidebarItem {
-                title: cookbook.title.value(),
-                icon: Shape::BookOpen,
-                selected: is_cookbook_selected(&view.read(), i),
-                onclick: move |_e| { view.set(View::Cookbook(i)) }
-            })
+        .map(|(i, cookbook_store)| {
+            if let Some(title) = cookbook_store.get_current_state().map(|cookbook| cookbook.title.value().clone()) {
+                rsx!(SidebarItem {
+                    title: title,
+                    icon: Shape::BookOpen,
+                    selected: is_cookbook_selected(&view.read(), i),
+                    onclick: move |_e| { view.set(View::Cookbook(i)) }
+                })
+            } else {
+                rsx!(SidebarItem {
+                    title: "Downloading...",
+                    icon: Shape::BookOpen,
+                    selected: is_cookbook_selected(&view.read(), i),
+                    onclick: move |_e| { view.set(View::Cookbook(i)) }
+                })
+            }
         });
 
     rsx! (
@@ -536,6 +556,7 @@ fn ConnectToPeerView(
                 }
             }
             ConnectToStoreView {
+                view,
                 state,
                 root_scope,
             }
@@ -545,6 +566,7 @@ fn ConnectToPeerView(
 
 #[component]
 fn ConnectToStoreView(
+    view: Signal<View>,
     state: Signal<State>,
     root_scope: ScopeId,
 ) -> Element {
@@ -564,7 +586,9 @@ fn ConnectToStoreView(
         // let recipe_store = use_store(|odyssey| {
             odyssey.connect_to_store::<Cookbook>(store_id) // , MemoryStorage::new());
         }).expect("Failed to connect_to_store");
+        let cookbook_id = state.len();
         state.push(recipe_store);
+        view.set(View::Cookbook(cookbook_id));
     };
 
     rsx! (
