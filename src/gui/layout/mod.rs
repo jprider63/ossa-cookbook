@@ -16,7 +16,7 @@ use crate::state::{Cookbook, CookbookId, CookbookOp, Recipe, RecipeId, RecipeOp,
 
 use crate::{new_store_in_scope, CookbookApplication, OdysseyProp, UseStore};
 
-enum View {
+pub(crate) enum View {
     Login,
     NoSelection,
     Cookbook(CookbookId),
@@ -41,11 +41,10 @@ fn is_cookbook_selected(view: &View, cid: CookbookId) -> bool {
 #[component]
 // pub fn layout(cx: Scope, state: Vec<UseStore<CookbookApplication, Cookbook>>) -> Element {
 pub fn layout(
+    view: Signal<View>,
     state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>,
     root_scope: ScopeId,
 ) -> Element {
-    let view = use_signal(|| View::NoSelection);
-
     let v = view.read();
     let r = match &*v {
         View::Login => todo!(),

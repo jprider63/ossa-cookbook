@@ -1,6 +1,9 @@
+use bimap::BiBTreeMap;
 use clap::Parser;
 use dioxus::prelude::*;
-use dioxus_desktop::muda::{Menu, PredefinedMenuItem, Submenu};
+use dioxus_desktop::muda::accelerator::Accelerator;
+use dioxus_desktop::muda::{Menu, MenuId, MenuItem, PredefinedMenuItem, Submenu};
+use dioxus_desktop::use_muda_event_handler;
 // use dioxus_desktop::tao::menu::{AboutMetadata, MenuBar, MenuItem, MenuItemAttributes};
 use futures::StreamExt;
 use odyssey_core::network::protocol::ecg_sync;
@@ -11,7 +14,7 @@ use odyssey_core::util::Sha256Hash;
 use odyssey_core::{core::OdysseyType, Odyssey, OdysseyConfig};
 use odyssey_crdt::{map::twopmap::TwoPMap, register::LWW, time::LamportTimestamp, CRDT};
 use serde::Serialize;
-use tracing::{debug, trace};
+use tracing::{debug, info, trace};
 use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::collections::BTreeSet;
@@ -70,6 +73,13 @@ impl WindowExt for Window {
 const app_name: &str = "Odyssey Cookbook";
 // const CSS: &str = manganis::mg!(file("./dist/style.css"));
 
+type MenuMap = BiBTreeMap<MenuId, MenuOperation>;
+
+#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+enum MenuOperation {
+    NewCookbook,
+}
+
 fn main() {
     // Turn on logging.
     tracing_subscriber::fmt::init();
@@ -108,6 +118,8 @@ fn main() {
     //     cli::run_client();
     // }
 
+    let mut menu_id_map = BiBTreeMap::<MenuId, MenuOperation>::new();
+
     let mut about_menu = Submenu::new(app_name, true);
     about_menu.append(&PredefinedMenuItem::about(None, None)).expect("TODO");
     about_menu.append(&PredefinedMenuItem::separator()).expect("TODO");
@@ -118,31 +130,35 @@ fn main() {
     about_menu.append(&PredefinedMenuItem::quit(None)).expect("TODO");
 
     let mut file_menu = Submenu::new("File", true);
-    // file_menu.add_native_item(MenuItem::CloseWindow);
+    let new_cookbook_menu_item = MenuItem::new("New Cookbook", true, Some(Accelerator::new(Some(Modifiers::SUPER), Code::KeyN)));
+    menu_id_map.insert_no_overwrite(new_cookbook_menu_item.id().clone(), MenuOperation::NewCookbook).unwrap();
+    file_menu.append(&new_cookbook_menu_item).expect("TODO");
+    file_menu.append(&PredefinedMenuItem::separator()).expect("TODO");
+    file_menu.append(&PredefinedMenuItem::close_window(None)).unwrap();
 
-    let mut edit_menu = Submenu::new("Edit", true);
-    // edit_menu.add_native_item(MenuItem::Undo);
-    // edit_menu.add_native_item(MenuItem::Redo);
-    // edit_menu.add_native_item(MenuItem::Separator);
-    // edit_menu.add_native_item(MenuItem::Cut);
-    // edit_menu.add_native_item(MenuItem::Copy);
-    // edit_menu.add_native_item(MenuItem::Paste);
-    // edit_menu.add_native_item(MenuItem::Separator);
-    // edit_menu.add_native_item(MenuItem::SelectAll);
+    let edit_menu = Submenu::new("Edit", true);
+    edit_menu.append(&PredefinedMenuItem::undo(None)).expect("TODO");
+    edit_menu.append(&PredefinedMenuItem::redo(None)).expect("TODO");
+    edit_menu.append(&PredefinedMenuItem::separator()).expect("TODO");
+    edit_menu.append(&PredefinedMenuItem::cut(None)).expect("TODO");
+    edit_menu.append(&PredefinedMenuItem::copy(None)).expect("TODO");
+    edit_menu.append(&PredefinedMenuItem::paste(None)).expect("TODO");
+    edit_menu.append(&PredefinedMenuItem::separator()).expect("TODO");
+    edit_menu.append(&PredefinedMenuItem::select_all(None)).expect("TODO");
 
-    let view_menu = Submenu::new("View", true);
+    let mut view_menu = Submenu::new("View", true);
     // // TODO: Hide tab bar items.
 
     let mut window_menu = Submenu::new("Window", true);
-    // window_menu.add_native_item(MenuItem::Minimize);
-    // window_menu.add_native_item(MenuItem::Zoom);
+    window_menu.append(&PredefinedMenuItem::minimize(None)).unwrap();
+    // window_menu.append(&PredefinedMenuItem::zoom(None));
     // // window_menu.add_native_item(MenuItem::Separator);
     // // window_menu.add_native_item(MenuItem::BringAllToFront);
     // // window_menu.add_native_item(MenuItem::Window);
     // // window_menu.add_native_item(MenuItem::CloseWindow);
 
     let mut help_menu = Submenu::new("Help", true);
-    // help_menu.add_item(MenuItemAttributes::new(&format!("{} Help", app_name)));
+    // help_menu.append(MenuItemAttributes::new(&format!("{} Help", app_name)));
 
     let mut menu = Menu::new();
     menu.append(&about_menu).expect("TODO");
@@ -159,11 +175,16 @@ fn main() {
     // dioxus_desktop::launch_with_props(app, odyssey_prop, c);
     dioxus_desktop::launch::launch(
         app,
-        vec![Box::new(move || {
-            let odyssey: Odyssey<CookbookApplication> = Odyssey::start(odyssey_config);
-            let odyssey_prop = OdysseyProp::new(odyssey);
-            Box::new(odyssey_prop)
-        })],
+        vec![
+            Box::new(move || {
+                let odyssey: Odyssey<CookbookApplication> = Odyssey::start(odyssey_config);
+                let odyssey_prop = OdysseyProp::new(odyssey);
+                Box::new(odyssey_prop)
+            }),
+            Box::new(move || {
+                Box::new(menu_id_map.clone())
+            }),
+        ],
         vec![Box::new(c)],
     );
 }
@@ -246,6 +267,17 @@ fn app() -> Element {
     //     cookbooks: vec![recipe_store],
     // }; // JP: Include map from cookbook StoreIds to Cookbooks?
 
+    let mut view = use_signal(|| gui::layout::View::NoSelection);
+
+    use_muda_event_handler(move |event| {
+        let menu_map = use_context::<MenuMap>();
+        let menu_id = event.id();
+        match menu_map.get_by_left(menu_id) {
+            Some(MenuOperation::NewCookbook) => view.set(gui::layout::View::NoSelection),
+            None => debug!("Unhandled menu event: {menu_id:?}"),
+        }
+    });
+
     let root_scope = current_scope_id().expect("Failed to retrieve root scope");
     rsx! (
         head {
@@ -256,7 +288,7 @@ fn app() -> Element {
             // }
         }
 
-        gui::layout::layout { state: state, root_scope }
+        gui::layout::layout { view, state, root_scope }
     )
 }
 
