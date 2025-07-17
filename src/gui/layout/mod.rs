@@ -336,13 +336,68 @@ fn CookbookRecipeNewView(
 ) -> Element {
     let cookbook_store = get_cookbook_store(view, state, cookbook_id).expect("TODO"); // ?;
     let cookbook = cookbook_store.get_current_state().expect("TODO"); // ?;
+    let cookbook_store_state = cookbook_store.get_current_store_state().expect("TODO"); // ?;
+    let parent_header_ids = cookbook_store_state.ecg.tips().clone();
+
+    let (form, form_state) = recipe_form(None);
+
+    let create_handler = move |mut _e| {
+        // Validate all fields.
+        if !valid_recipe_form(&form_state) {
+            return;
+        }
+
+        let t = todo!("How do we get time of self?"); // JP: Add "Current" time to point to self?
+        let recipe = Recipe {
+            title: LWW::new(t, *form_state.name.peek()),
+            ingredients: LWW::new(t, form_state.ingredients.peek().clone()),
+            instructions: LWW::new(t, form_state.instructions.peek().clone()),
+        };
+        let op = CookbookOp::Recipes(TwoPMapOp::Insert { value: recipe });
+        debug!("op: {:?}", op);
+        let recipe_id = cookbook_store.apply(parent_header_ids.clone(), op);
+
+        view.set(View::CookbookRecipe(cookbook_id, recipe_id));
+    };
     rsx!(
         Sidebar { view: view, state: state }
         div {
             class: "content",
-            p {
-                "TODO: Create recipe function"
+            nav {
+                class: "flex w-full mt-4 mb-6",
+                div {
+                    class: "flex-1 flex justify-start mr-auto whitespace-nowrap",
+                    div {
+                        class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
+                        onclick: move |_e| {view.set(View::Cookbook(cookbook_id))},
+                        Icon {
+                            class: "w-6 h-6",
+                            icon: Shape::ChevronLeft,
+                        },
+                        span {
+                            "Cancel" // "{recipe.title}"
+                        }
+                    }
+                }
+                div {
+                    class: "whitespace-nowrap",
+                    h1 {
+                        class: "text-3xl font-bold text-center",
+                            "New Recipe"
+                    }
+                }
+                div {
+                    class: "flex-1 flex justify-end ml-auto whitespace-nowrap",
+                    div {
+                        class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
+                        onclick: create_handler, // TODO: Enabled based on if valid? Or set is_modified to true for all fields.
+                        span {
+                            "Create"
+                        }
+                    }
+                }
             }
+            { form }
         }
     )
 }
@@ -362,7 +417,7 @@ fn CookbookRecipeEditView(
     let old_recipe = get_recipe(view, &old_cookbook, recipe_id).expect("TODO"); // ?;
 
     let old_recipe = old_recipe.clone();
-    let (form, form_state) = recipe_form(&old_recipe);
+    let (form, form_state) = recipe_form(Some(&old_recipe));
 
     let save_handler = move |mut _e| {
         // Validate all fields.
