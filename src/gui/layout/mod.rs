@@ -19,7 +19,7 @@ use crate::gui::layout::cookbook::form::{new_cookbook_form, valid_new_cookbook_f
 use crate::gui::layout::recipe::form::{recipe_form, valid_recipe_form};
 use crate::state::{Cookbook, CookbookId, CookbookOp, Recipe, RecipeId, RecipeOp, State};
 
-use crate::{new_store_in_scope, use_store, CookbookApplication, OdysseyProp, UseStore};
+use crate::{new_store_in_scope, use_store, CookbookApplication, MenuMap, MenuOperation, OdysseyProp, UseStore};
 
 pub(crate) enum View {
     Login,
@@ -32,23 +32,59 @@ pub(crate) enum View {
     Connections,
 }
 
-fn is_cookbook_selected(view: &View, cid: CookbookId) -> bool {
-    match view {
-        View::Login => false,
-        View::NoSelection => false,
-        View::CookbookNew => false,
-        View::Connections => false,
-        View::Cookbook(vid) => *vid == cid,
-        View::CookbookRecipe(vid, _rid) => *vid == cid,
-        View::CookbookRecipeNew(vid) => *vid == cid,
-        View::CookbookRecipeEdit(vid, _rid) => *vid == cid,
+impl View {
+    pub(crate) fn selected_cookbook(&self) -> Option<&CookbookId> {
+        match self {
+            View::Login => None,
+            View::NoSelection => None,
+            View::CookbookNew => None,
+            View::Connections => None,
+            View::Cookbook(vid) => Some(vid),
+            View::CookbookRecipe(vid, _rid) => Some(vid),
+            View::CookbookRecipeNew(vid) => Some(vid),
+            View::CookbookRecipeEdit(vid, _rid) => Some(vid),
+        }
     }
 }
+
+fn is_cookbook_selected(view: &View, cid: CookbookId) -> bool {
+    view.selected_cookbook().map_or(false, |vid| vid == &cid)
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub(crate) struct SignalView (Signal<View>);
+
+impl SignalView {
+    pub(crate) fn use_view(view: View) ->Self  {
+        let s = use_signal(|| view);
+        SignalView(s)
+    }
+
+    pub(crate) fn set(&mut self, view: View) {
+        // TODO: Enable "New Recipe menu item" when MenuItem implements Sync
+        // let menu_map = use_context::<MenuMap>();
+        // let menu_item = menu_map.get_menu(&MenuOperation::NewCookbookRecipe).unwrap();
+        // let enabled = view.selected_cookbook().is_some();
+        // menu_item.set_enabled(enabled);
+
+        self.0.set(view);
+    }
+
+    pub(crate) fn peek(&self) -> ReadableRef<Signal<View>> {
+        self.0.peek()
+    }
+
+    pub(crate) fn read(&self) -> ReadableRef<Signal<View>> {
+        self.0.read()
+    }
+}
+
+
 
 #[component]
 // pub fn layout(cx: Scope, state: Vec<UseStore<CookbookApplication, Cookbook>>) -> Element {
 pub fn layout(
-    view: Signal<View>,
+    view: SignalView,
     state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>,
     root_scope: ScopeId,
 ) -> Element {
@@ -102,7 +138,7 @@ pub fn layout(
 
 #[component]
 fn NoSelectionView(
-    view: Signal<View>,
+    view: SignalView,
     state: Signal<State>,
 ) -> Element {
     rsx! (
@@ -118,7 +154,7 @@ fn NoSelectionView(
 }
 
 fn get_cookbook_store(
-    mut view: Signal<View>,
+    mut view: SignalView,
     state: Signal<State>,
     cookbook_id: CookbookId,
 ) -> Option<UseStore<CookbookApplication, Cookbook>> {
@@ -133,7 +169,7 @@ fn get_cookbook_store(
     cookbook
 }
 
-fn get_recipe(mut view: Signal<View>, cookbook: &Cookbook, recipe_id: RecipeId) -> Option<&Recipe> {
+fn get_recipe(mut view: SignalView, cookbook: &Cookbook, recipe_id: RecipeId) -> Option<&Recipe> {
     let recipe = cookbook.recipes.get(&recipe_id);
     if recipe.is_none() {
         // Recipe not found, so set no selection.
@@ -146,7 +182,7 @@ fn get_recipe(mut view: Signal<View>, cookbook: &Cookbook, recipe_id: RecipeId) 
 }
 
 #[component]
-fn CookbookView(view: Signal<View>, state: Signal<State>, cookbook_id: CookbookId) -> Element {
+fn CookbookView(view: SignalView, state: Signal<State>, cookbook_id: CookbookId) -> Element {
     let cookbook_store = get_cookbook_store(view, state, cookbook_id).expect("TODO"); // ?;
     if let Some(cookbook) = cookbook_store.get_current_state() {
 
@@ -211,7 +247,7 @@ fn CookbookView(view: Signal<View>, state: Signal<State>, cookbook_id: CookbookI
 
 #[component]
 fn CookbookRecipeView(
-    view: Signal<View>,
+    view: SignalView,
     state: Signal<State>,
     cookbook_id: CookbookId,
     recipe_id: RecipeId,
@@ -294,7 +330,7 @@ fn CookbookRecipeView(
 
 #[component]
 fn CookbookRecipeNewView(
-    view: Signal<View>,
+    view: SignalView,
     state: Signal<State>,
     cookbook_id: CookbookId,
 ) -> Element {
@@ -313,7 +349,7 @@ fn CookbookRecipeNewView(
 
 #[component]
 fn CookbookRecipeEditView(
-    view: Signal<View>,
+    view: SignalView,
     state: Signal<State>,
     cookbook_id: CookbookId,
     recipe_id: RecipeId,
@@ -419,7 +455,7 @@ fn CookbookRecipeEditView(
 
 #[component]
 fn RecipePill(
-    view: Signal<View>,
+    view: SignalView,
     cookbook_id: CookbookId,
     recipe_id: RecipeId,
     recipe: Recipe,
@@ -447,7 +483,7 @@ fn RecipePill(
 
 #[component]
 fn Sidebar(
-    view: Signal<View>,
+    view: SignalView,
     state: Signal<State>,
 ) -> Element {
     let cookbooks = state.read();
@@ -550,7 +586,7 @@ pub fn SidebarItem<'a>(props: SidebarItemProps) -> Element {
 // TODO: Make this a pop up view?
 #[component]
 fn CookbookNewView(
-    view: Signal<View>,
+    view: SignalView,
     state: Signal<State>,
     root_scope: ScopeId,
 ) -> Element {
@@ -609,7 +645,7 @@ fn CookbookNewView(
 
 #[component]
 fn ConnectsView(
-    view: Signal<View>,
+    view: SignalView,
     state: Signal<State>,
     root_scope: ScopeId,
 ) -> Element {
@@ -632,7 +668,7 @@ fn ConnectsView(
 
 #[component]
 fn ConnectToPeerView(
-    view: Signal<View>,
+    view: SignalView,
     state: Signal<State>,
 ) -> Element {
     use crate::gui::form::TextField;
@@ -677,7 +713,7 @@ fn ConnectToPeerView(
 
 #[component]
 fn ConnectToStoreView(
-    view: Signal<View>,
+    view: SignalView,
     state: Signal<State>,
     root_scope: ScopeId,
 ) -> Element {

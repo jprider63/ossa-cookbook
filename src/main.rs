@@ -1,4 +1,5 @@
-use bimap::BiBTreeMap;
+#![feature(map_try_insert)]
+
 use clap::Parser;
 use dioxus::prelude::*;
 use dioxus_desktop::muda::accelerator::Accelerator;
@@ -17,12 +18,13 @@ use serde::Serialize;
 use tracing::{debug, info, trace};
 use std::borrow::BorrowMut;
 use std::cell::RefCell;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::future::Future;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::panic::Location;
 use std::rc::Rc;
 
+use crate::gui::layout::SignalView;
 use crate::state::*;
 
 mod cli;
@@ -73,11 +75,35 @@ impl WindowExt for Window {
 const app_name: &str = "Odyssey Cookbook";
 // const CSS: &str = manganis::mg!(file("./dist/style.css"));
 
-type MenuMap = BiBTreeMap<MenuId, MenuOperation>;
+#[derive(Clone)]
+struct MenuMap {
+    id_to_op: BTreeMap<MenuId, MenuOperation>,
+    // op_to_menu: BTreeMap<MenuOperation, MenuItem>, // Can't do this since MenuItem is not Sync..
+}
 
-#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+impl MenuMap {
+    fn new() -> Self {
+        Self { id_to_op: BTreeMap::new()} // , op_to_menu: BTreeMap::new() }
+    }
+
+    fn insert(&mut self, menuitem: MenuItem, operation: MenuOperation) {
+        self.id_to_op.try_insert(dbg!(menuitem.id()).clone(), operation).expect("Menu item already exists.");
+        // self.op_to_menu.try_insert(operation, menuitem);
+    }
+
+    // fn get_menu(&self, op: &MenuOperation) -> Option<&MenuItem> {
+    //     self.op_to_menu.get(op)
+    // }
+
+    fn get_op(&self, menu_id: &MenuId) -> Option<&MenuOperation> {
+        self.id_to_op.get(menu_id)
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord)]
 enum MenuOperation {
     NewCookbook,
+    NewCookbookRecipe,
 }
 
 fn main() {
@@ -118,7 +144,7 @@ fn main() {
     //     cli::run_client();
     // }
 
-    let mut menu_id_map = BiBTreeMap::<MenuId, MenuOperation>::new();
+    let mut menu_id_map = MenuMap::new();
 
     let mut about_menu = Submenu::new(app_name, true);
     about_menu.append(&PredefinedMenuItem::about(None, None)).expect("TODO");
@@ -131,8 +157,11 @@ fn main() {
 
     let mut file_menu = Submenu::new("File", true);
     let new_cookbook_menu_item = MenuItem::new("New Cookbook", true, Some(Accelerator::new(Some(Modifiers::SUPER), Code::KeyN)));
-    menu_id_map.insert_no_overwrite(new_cookbook_menu_item.id().clone(), MenuOperation::NewCookbook).unwrap();
     file_menu.append(&new_cookbook_menu_item).expect("TODO");
+    menu_id_map.insert(new_cookbook_menu_item, MenuOperation::NewCookbook);
+    let new_recipe_menu_item = MenuItem::new("New Recipe", false, None);
+    file_menu.append(&new_recipe_menu_item).expect("TODO");
+    menu_id_map.insert(new_recipe_menu_item, MenuOperation::NewCookbookRecipe);
     file_menu.append(&PredefinedMenuItem::separator()).expect("TODO");
     file_menu.append(&PredefinedMenuItem::close_window(None)).unwrap();
 
@@ -267,13 +296,17 @@ fn app() -> Element {
     //     cookbooks: vec![recipe_store],
     // }; // JP: Include map from cookbook StoreIds to Cookbooks?
 
-    let mut view = use_signal(|| gui::layout::View::NoSelection);
+    let mut view = SignalView::use_view(gui::layout::View::NoSelection);
 
     use_muda_event_handler(move |event| {
         let menu_map = use_context::<MenuMap>();
         let menu_id = event.id();
-        match menu_map.get_by_left(menu_id) {
+        match menu_map.get_op(menu_id) {
             Some(MenuOperation::NewCookbook) => view.set(gui::layout::View::CookbookNew),
+            Some(MenuOperation::NewCookbookRecipe) => {
+                let cookbook_id = *view.peek().selected_cookbook().expect("unreachable");
+                view.set(gui::layout::View::CookbookRecipeNew(cookbook_id));
+            }
             None => debug!("Unhandled menu event: {menu_id:?}"),
         }
     });
