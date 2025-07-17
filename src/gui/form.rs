@@ -33,7 +33,12 @@ pub struct TextFieldProps {
 }
 
 pub fn TextField(props: TextFieldProps) -> Element {
-    let err: Result<(), &'static str> = (props.validation_fn)(&props.value);
+    let mut is_modified = use_signal(|| false);
+    let err: Result<(), &'static str> = if *is_modified.peek() {
+        (props.validation_fn)(&props.value)
+    } else {
+        Ok(())
+    };
 
     rsx! (
         input {
@@ -41,7 +46,10 @@ pub fn TextField(props: TextFieldProps) -> Element {
             r#id: props.id,
             r#type: "text",
             placeholder: props.placeholder,
-            oninput: move |evt| props.oninput.call(evt),
+            oninput: move |evt| {
+                is_modified.set(true);
+                props.oninput.call(evt);
+            },
             onkeyup: move |evt| props.onkeyup.as_ref().map_or((), |f| f.call(evt)),
             value: "{props.value}"
         }
