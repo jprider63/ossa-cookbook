@@ -1,3 +1,4 @@
+pub mod cookbook;
 pub mod recipe;
 
 use std::net::SocketAddrV4;
@@ -8,17 +9,22 @@ use dioxus_heroicons::{solid::Shape, Icon};
 use dioxus_markdown::Markdown;
 // TODO: Fix outline icons.
 
-use odyssey_crdt::map::twopmap::TwoPMapOp;
+use odyssey_core::storage::memory::MemoryStorage;
+use odyssey_core::store::ecg::v0::OperationId;
+use odyssey_crdt::map::twopmap::{TwoPMap, TwoPMapOp};
+use odyssey_crdt::register::LWW;
 use tracing::{debug, error, warn};
 
+use crate::gui::layout::cookbook::form::{new_cookbook_form, valid_new_cookbook_form};
 use crate::gui::layout::recipe::form::{recipe_form, valid_recipe_form};
 use crate::state::{Cookbook, CookbookId, CookbookOp, Recipe, RecipeId, RecipeOp, State};
 
-use crate::{new_store_in_scope, CookbookApplication, OdysseyProp, UseStore};
+use crate::{new_store_in_scope, use_store, CookbookApplication, OdysseyProp, UseStore};
 
 pub(crate) enum View {
     Login,
     NoSelection,
+    CookbookNew,
     Cookbook(CookbookId),
     CookbookRecipe(CookbookId, RecipeId),
     CookbookRecipeNew(CookbookId),
@@ -30,6 +36,7 @@ fn is_cookbook_selected(view: &View, cid: CookbookId) -> bool {
     match view {
         View::Login => false,
         View::NoSelection => false,
+        View::CookbookNew => false,
         View::Connections => false,
         View::Cookbook(vid) => *vid == cid,
         View::CookbookRecipe(vid, _rid) => *vid == cid,
@@ -69,14 +76,19 @@ pub fn layout(
             cookbook_id: *cookbookid
         }),
         View::CookbookRecipeEdit(cookbookid, recipeid) => rsx!(CookbookRecipeEditView {
-            view: view,
-            state: state,
+            view,
+            state,
             cookbook_id: *cookbookid,
             recipe_id: recipeid.clone()
         }),
         View::Connections => rsx!(ConnectsView {
-            view: view,
-            state: state,
+            view,
+            state,
+            root_scope,
+        }),
+        View::CookbookNew => rsx!(CookbookNewView {
+            view,
+            state,
             root_scope,
         }),
     };
@@ -531,6 +543,66 @@ pub fn SidebarItem<'a>(props: SidebarItemProps) -> Element {
                     "{props.title}"
                 }
             }
+        }
+    )
+}
+
+// TODO: Make this a pop up view?
+#[component]
+fn CookbookNewView(
+    view: Signal<View>,
+    state: Signal<State>,
+    root_scope: ScopeId,
+) -> Element {
+    let (form, form_state) = new_cookbook_form();
+    let save_handler = move |mut _e| {
+        // Validate all fields.
+        if !valid_new_cookbook_form(&form_state) {
+            return;
+        }
+
+        let cookbook = Cookbook {
+            title: LWW::new(OperationId::new(None, 0), form_state.name.peek().to_string()),
+            recipes: TwoPMap::new(),
+        };
+        let cookbook_store = new_store_in_scope(root_scope, |odyssey| {
+            (*odyssey).create_store(cookbook, MemoryStorage::new())
+        }).unwrap();
+
+        let cookbook_id = state.len();
+        state.push(cookbook_store);
+
+        view.set(View::Cookbook(cookbook_id));
+    };
+
+    rsx! (
+        Sidebar { view: view, state: state }
+        div {
+            class: "content",
+            nav {
+                class: "flex w-full mt-4 mb-6",
+                div {
+                    class: "flex-1 flex justify-start mr-auto whitespace-nowrap",
+                }
+                div {
+                    class: "whitespace-nowrap",
+                    h1 {
+                        class: "text-3xl font-bold text-center",
+                            "New Cookbook"
+                    }
+                }
+                div {
+                    class: "flex-1 flex justify-end ml-auto whitespace-nowrap",
+                    div {
+                        class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
+                        onclick: save_handler,
+                        span {
+                            "Create"
+                        }
+                    }
+                }
+            }
+            { form }
         }
     )
 }

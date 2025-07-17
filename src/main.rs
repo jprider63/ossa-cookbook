@@ -240,7 +240,7 @@ fn initial_demo_state() -> Cookbook {
     // TODO: Should be a Map CRDT. Include other store metadata like sharing/permissions, peers, etc
     Cookbook {
         title: lww(&mut l, "My Recipes".into()),
-        recipes: recipes,
+        recipes,
     }
 }
 
@@ -273,7 +273,7 @@ fn app() -> Element {
         let menu_map = use_context::<MenuMap>();
         let menu_id = event.id();
         match menu_map.get_by_left(menu_id) {
-            Some(MenuOperation::NewCookbook) => view.set(gui::layout::View::NoSelection),
+            Some(MenuOperation::NewCookbook) => view.set(gui::layout::View::CookbookNew),
             None => debug!("Unhandled menu event: {menu_id:?}"),
         }
     });
