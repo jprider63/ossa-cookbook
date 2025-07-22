@@ -9,6 +9,7 @@ use dioxus_heroicons::{solid::Shape, Icon};
 use dioxus_markdown::Markdown;
 // TODO: Fix outline icons.
 
+use odyssey_core::core::CausalTime;
 use odyssey_core::storage::memory::MemoryStorage;
 use odyssey_core::store::ecg::v0::OperationId;
 use odyssey_crdt::map::twopmap::{TwoPMap, TwoPMapOp};
@@ -17,7 +18,7 @@ use tracing::{debug, error, warn};
 
 use crate::gui::layout::cookbook::form::{new_cookbook_form, valid_new_cookbook_form};
 use crate::gui::layout::recipe::form::{recipe_form, valid_recipe_form};
-use crate::state::{Cookbook, CookbookId, CookbookOp, Recipe, RecipeId, RecipeOp, State};
+use crate::state::{Cookbook, CookbookId, CookbookOp, Recipe, RecipeId, RecipeOp, State, Time};
 
 use crate::{new_store_in_scope, use_store, CookbookApplication, MenuMap, MenuOperation, OdysseyProp, UseStore};
 
@@ -335,9 +336,6 @@ fn CookbookRecipeNewView(
     cookbook_id: CookbookId,
 ) -> Element {
     let cookbook_store = get_cookbook_store(view, state, cookbook_id).expect("TODO"); // ?;
-    let cookbook = cookbook_store.get_current_state().expect("TODO"); // ?;
-    let cookbook_store_state = cookbook_store.get_current_store_state().expect("TODO"); // ?;
-    let parent_header_ids = cookbook_store_state.ecg.tips().clone();
 
     let (form, form_state) = recipe_form(None);
 
@@ -347,15 +345,16 @@ fn CookbookRecipeNewView(
             return;
         }
 
-        let t = todo!("How do we get time of self?"); // JP: Add "Current" time to point to self?
-        let recipe = Recipe {
-            title: LWW::new(t, *form_state.name.peek()),
-            ingredients: LWW::new(t, form_state.ingredients.peek().clone()),
-            instructions: LWW::new(t, form_state.instructions.peek().clone()),
-        };
-        let op = CookbookOp::Recipes(TwoPMapOp::Insert { value: recipe });
-        debug!("op: {:?}", op);
-        let recipe_id = cookbook_store.apply(parent_header_ids.clone(), op);
+        let recipe_id = cookbook_store.apply(|t| {
+            let recipe = crate::state::internal::Recipe {
+                title: LWW::new(t, form_state.name.peek().clone()),
+                ingredients: LWW::new(t, form_state.ingredients.peek().clone()),
+                instructions: LWW::new(t, form_state.instructions.peek().clone()),
+            };
+            let op = CookbookOp::Recipes(TwoPMapOp::Insert { key: t, value: recipe });
+            debug!("op: {:?}", op);
+            op
+        });
 
         view.set(View::CookbookRecipe(cookbook_id, recipe_id));
     };
@@ -412,7 +411,6 @@ fn CookbookRecipeEditView(
     let mut cookbook_store = get_cookbook_store(view, state, cookbook_id).expect("TODO"); // ?;
     let cookbook_store_state = cookbook_store.get_current_store_state().expect("TODO"); // ?;
     let old_cookbook = cookbook_store_state.state;
-    let parent_header_ids = cookbook_store_state.ecg.tips().clone();
 
     let old_recipe = get_recipe(view, &old_cookbook, recipe_id).expect("TODO"); // ?;
 
@@ -425,35 +423,45 @@ fn CookbookRecipeEditView(
             return;
         }
 
-        let mut pending_ops = Vec::new(); // cookbook.create_batch_operations();
+        // let mut pending_ops: Vec<impl FnOnce<CausalTime<Time>, Output = CookbookOp>> = Vec::new(); // cookbook.create_batch_operations();
+        let mut pending_ops = cookbook_store.operations_builder();
+
+        let helper = |op| {
+            CookbookOp::Recipes(TwoPMapOp::Apply {
+                key: CausalTime::time(recipe_id),
+                operation: op,
+            })
+        };
 
         // Diff all fields.
         let new_name = form_state.name.peek();
         let new_ingredients = form_state.ingredients.peek();
         let new_instructions = form_state.instructions.peek();
         if *old_recipe.title.value() != *new_name {
-            pending_ops.push(RecipeOp::Title(new_name.clone()));
+            pending_ops.queue(|t| helper(RecipeOp::Title(LWW::new(t, new_name.clone()))));
         }
         if *old_recipe.ingredients.value() != *new_ingredients {
-            pending_ops.push(RecipeOp::Ingredients(new_ingredients.clone()));
+            pending_ops.queue(|t| helper(RecipeOp::Ingredients(LWW::new(t, new_ingredients.clone()))));
         }
         if *old_recipe.instructions.value() != *new_instructions {
-            pending_ops.push(RecipeOp::Instructions(new_instructions.clone()));
+            pending_ops.queue(|t| helper(RecipeOp::Instructions(LWW::new(t, new_instructions.clone()))));
         }
 
         // Save updated fields by applying CRDT operations.
+        let _ids = pending_ops.apply();
+
         // cookbook_store.apply_batch_operations(pending_ops);
-        let ops = pending_ops
-            .into_iter()
-            .map(|op| {
-                CookbookOp::Recipes(TwoPMapOp::Apply {
-                    key: recipe_id,
-                    operation: op,
-                })
-            })
-            .collect();
-        debug!("ops: {:?}", ops);
-        cookbook_store.apply_batch(parent_header_ids.clone(), ops);
+        // let ops = pending_ops
+        //     .into_iter()
+        //     .map(|op| {
+        //         CookbookOp::Recipes(TwoPMapOp::Apply {
+        //             key: recipe_id,
+        //             operation: op,
+        //         })
+        //     })
+        //     .collect();
+        // debug!("ops: {:?}", ops);
+        // cookbook_store.apply_batch(parent_header_ids.clone(), ops);
 
         // TODO: Send CRDT operations
         // let mut new_cookbook = old_cookbook.clone();

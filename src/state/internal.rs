@@ -1,8 +1,9 @@
 
+use odyssey_core::core::CausalTime;
 use odyssey_core::store::ecg::v0::{HeaderId, OperationId};
 use odyssey_core::util::Sha256Hash;
 use odyssey_crdt::map::twopmap::TwoPMapOp;
-use odyssey_crdt::OperationFunctor;
+use odyssey_crdt::ConcretizeTime;
 use odyssey_crdt::{map::twopmap::TwoPMap, register::LWW, time::CausalState, CRDT};
 
 use serde::{Deserialize, Serialize};
@@ -35,14 +36,14 @@ pub enum RecipeOp<Time> {
 }
 
 // TODO: Derive this automatically. (use `heck` for case conversion) XXX
-impl CRDT for Recipe<Time> {
-    type Op<Time> = RecipeOp<Time>;
+impl<Time: Ord> CRDT for Recipe<Time> {
+    type Op = RecipeOp<Time>;
     type Time = Time;
 
     fn apply<CS: CausalState<Time = Self::Time>>(
         self,
         st: &CS,
-        op: Self::Op<Self::Time>,
+        op: Self::Op,
     ) -> Self {
         match op {
             RecipeOp::Title(t) => Recipe {
@@ -73,20 +74,28 @@ pub struct Cookbook<Time: Clone + Ord> {
 #[derive(Debug, Serialize, Deserialize)]
 pub enum CookbookOp<Time> {
     Title(LWW<Time, String>),
-    Recipes(TwoPMapOp<RecipeId<Time>, Recipe<Time>>),
+    Recipes(TwoPMapOp<RecipeId<Time>, Recipe<Time>, RecipeOp<Time>>),
     // Title(<LWW<Time, String> as CRDT>::Op<Time>),
     // Recipes(<TwoPMap<RecipeId, Recipe> as CRDT>::Op<Time>),
 }
 
+impl<Time> ConcretizeTime<Time> for CookbookOp<Time> {
+    type Serialized = CookbookOp<CausalTime<Time>>;
+
+    fn concretize_time(src: Self::Serialized, header_id: Time) -> Self {
+        todo!()
+    }
+}
+
 // TODO: Derive this automatically. (use `heck` for case conversion) XXX
-impl CRDT for Cookbook<Time> {
-    type Op<Time> = CookbookOp<Time>;
+impl<Time: Ord + Clone> CRDT for Cookbook<Time> {
+    type Op = CookbookOp<Time>;
     type Time = Time;
 
     fn apply<CS: CausalState<Time = Self::Time>>(
         self,
         st: &CS,
-        op: Self::Op<Self::Time>,
+        op: Self::Op,
     ) -> Self {
         match op {
             CookbookOp::Title(t) => Cookbook {
@@ -103,28 +112,28 @@ impl CRDT for Cookbook<Time> {
 
 pub type State = Vec<UseStore<CookbookApplication, Cookbook<Time>>>;
 
-impl<T, U> OperationFunctor<T, U> for RecipeOp<T> {
-    type Target<Time> = RecipeOp<Time>;
-
-    fn fmap(self, f: impl Fn(T) -> U) -> Self::Target<U> {
-        match self {
-            RecipeOp::Title(op) => RecipeOp::Title(op.fmap(f)),
-            RecipeOp::Ingredients (op) => RecipeOp::Ingredients(op.fmap(f)),
-            RecipeOp::Instructions(op) => RecipeOp::Instructions(op.fmap(f)),
-        }
-    }
-}
-
-impl<T, U> OperationFunctor<T, U> for CookbookOp<T> {
-    type Target<Time> = CookbookOp<Time>;
-
-    fn fmap(self, f: impl Fn(T) -> U) -> Self::Target<U> {
-        match self {
-            CookbookOp::Title(op) => CookbookOp::Title(op.fmap(f)),
-            CookbookOp::Recipes(op) => CookbookOp::Recipes(op.fmap(f)),
-        }
-    }
-}
+// impl<T, U> OperationFunctor<T, U> for RecipeOp<T> {
+//     type Target<Time> = RecipeOp<Time>;
+// 
+//     fn fmap(self, f: impl Fn(T) -> U) -> Self::Target<U> {
+//         match self {
+//             RecipeOp::Title(op) => RecipeOp::Title(op.fmap(f)),
+//             RecipeOp::Ingredients (op) => RecipeOp::Ingredients(op.fmap(f)),
+//             RecipeOp::Instructions(op) => RecipeOp::Instructions(op.fmap(f)),
+//         }
+//     }
+// }
+// 
+// impl<T, U> OperationFunctor<T, U> for CookbookOp<T> {
+//     type Target<Time> = CookbookOp<Time>;
+// 
+//     fn fmap(self, f: impl Fn(T) -> U) -> Self::Target<U> {
+//         match self {
+//             CookbookOp::Title(op) => CookbookOp::Title(op.fmap(f)),
+//             CookbookOp::Recipes(op) => CookbookOp::Recipes(op.fmap(f)), // <TwoPMapOp<RecipeId<T>, Recipe<T>, RecipeOp<T>> as OperationFunctor<T, U>>::fmap(op, f)),
+//         }
+//     }
+// }
 
 // use std::marker::PhantomData;
 // #[derive(Props)]

@@ -1,3 +1,5 @@
+// #![feature(impl_trait_in_bindings)]
+// #![feature(unboxed_closures)]
 #![feature(map_try_insert)]
 
 use clap::Parser;
@@ -13,6 +15,7 @@ use odyssey_core::store::ecg::v0::{Body, Header, HeaderId, OperationId};
 use odyssey_core::store::ecg::{self, ECGBody, ECGHeader};
 use odyssey_core::util::Sha256Hash;
 use odyssey_core::{core::OdysseyType, Odyssey, OdysseyConfig};
+use odyssey_crdt::ConcretizeTime;
 use odyssey_crdt::{map::twopmap::TwoPMap, register::LWW, time::LamportTimestamp, CRDT};
 use serde::Serialize;
 use tracing::{debug, info, trace};
@@ -218,7 +221,7 @@ fn main() {
     );
 }
 
-fn initial_demo_state() -> Cookbook {
+fn initial_demo_state() -> crate::state::internal::Cookbook<Time> {
     struct T(u8);
     impl T {
         fn new() -> Self {
@@ -248,11 +251,11 @@ fn initial_demo_state() -> Cookbook {
     let ecg_state: ecg::State<Header<Sha256Hash>, LWW<Time, ()>> = ecg::State::new();
 
     let recipes = TwoPMap::new();
-    let recipes = recipes.apply(&ecg_state, l.t(), TwoPMap::insert(recipe.clone()));
-    let recipes = recipes.apply(&ecg_state, l.t(), TwoPMap::insert(recipe.clone()));
-    let recipes = recipes.apply(&ecg_state, l.t(), TwoPMap::insert(recipe.clone()));
-    let recipes = recipes.apply(&ecg_state, l.t(), TwoPMap::insert(recipe.clone()));
-    let recipes = recipes.apply(&ecg_state, l.t(), TwoPMap::insert(recipe.clone()));
+    let recipes = recipes.apply(&ecg_state, TwoPMap::insert(l.t(), recipe.clone()));
+    let recipes = recipes.apply(&ecg_state, TwoPMap::insert(l.t(), recipe.clone()));
+    let recipes = recipes.apply(&ecg_state, TwoPMap::insert(l.t(), recipe.clone()));
+    let recipes = recipes.apply(&ecg_state, TwoPMap::insert(l.t(), recipe.clone()));
+    let recipes = recipes.apply(&ecg_state, TwoPMap::insert(l.t(), recipe.clone()));
 
     // let recipes = BTreeMap::from([
     //                               (0, recipe.clone()),
@@ -282,8 +285,8 @@ fn app() -> Element {
 
     // let odyssey = use_context::<OdysseyProp<CookbookApplication>>().odyssey;
     let recipe_store = use_store(|odyssey| {
-        let init_st = initial_demo_state();
-        (*odyssey).create_store(init_st, MemoryStorage::new())
+        let init_st: Cookbook = initial_demo_state();
+        (*odyssey).create_store::<Cookbook, _>(init_st, MemoryStorage::new())
     });
     let state = use_signal(|| {
         // let odyssey: Odyssey<CookbookApplication> = todo!();
@@ -355,16 +358,16 @@ impl OdysseyType for CookbookApplication {
                        // type ECGHeader<T: CRDT<Time = OperationId<HeaderId<Sha256Hash>>>> = Header<Sha256Hash, T>;
     type ECGHeader = Header<Sha256Hash>;
     // type ECGHeader<T: CRDT<Op: Serialize>> = Header<Sha256Hash, T>;
-    type ECGBody<T: CRDT> = Body<Sha256Hash, T>; // : CRDT<Time = Self::Time, Op: Serialize>> = Body<Sha256Hash, T>;
+    type ECGBody<T: CRDT<Op: ConcretizeTime<OperationId<HeaderId<Sha256Hash>>>>> = Body<Sha256Hash, <T::Op as ConcretizeTime<OperationId<HeaderId<Sha256Hash>>>>::Serialized>; // : CRDT<Time = Self::Time, Op: Serialize>> = Body<Sha256Hash, T>;
 
     type Time = OperationId<HeaderId<Sha256Hash>>;
 
-    type CausalState<T: CRDT<Time = Self::Time, Op: Serialize>> = ecg::State<Self::ECGHeader, T>;
+    type CausalState<T: CRDT<Time = Self::Time>> = ecg::State<Self::ECGHeader, T>;
     // type ECGHeader<T> = Header<Sha256Hash, T>
     //     where T: CRDT<Time = OperationId<HeaderId<Sha256Hash>>>;
     // type ECGHeader<T> = Header<Sha256Hash, T>;
 
-    fn to_causal_state<'a, T: CRDT<Time = Self::Time, Op: Serialize>>(
+    fn to_causal_state<'a, T: CRDT<Time = Self::Time>>(
         st: &'a ecg::State<Self::ECGHeader, T>,
     ) -> &'a Self::CausalState<T> {
         st
@@ -372,9 +375,9 @@ impl OdysseyType for CookbookApplication {
 }
 
 // TODO: Create `odyssey-dioxus` crate?
-use odyssey_core::core::StoreHandle;
+use odyssey_core::core::{CausalTime, StoreHandle};
 use odyssey_core::store::StateUpdate;
-pub struct UseStore<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize> + 'static> {
+pub struct UseStore<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: ConcretizeTime<OT::Time>> + 'static> {
     future: Task,
     handle: Rc<RefCell<StoreHandle<OT, T>>>,
     // handle: StoreHandle<OT, T>,
@@ -392,7 +395,7 @@ pub struct UseStore<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Seri
 //     }
 // }
 
-impl<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize>> Clone for UseStore<OT, T> {
+impl<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: ConcretizeTime<OT::Time>>> Clone for UseStore<OT, T> {
     fn clone(&self) -> Self {
         UseStore {
             future: self.future.clone(),
@@ -403,12 +406,12 @@ impl<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize>> Clone f
 }
 
 // #[derive(Clone)]
-struct StoreState<OT: OdysseyType, T: CRDT<Time = OT::Time, Op: Serialize>> {
+struct StoreState<OT: OdysseyType, T: CRDT<Time = OT::Time>> {
     state: T,
     ecg: ecg::State<OT::ECGHeader, T>,
 }
 
-impl<OT: OdysseyType, T: CRDT<Time = OT::Time, Op: Serialize> + Clone> Clone for StoreState<OT, T>
+impl<OT: OdysseyType, T: CRDT<Time = OT::Time> + Clone> Clone for StoreState<OT, T>
 where
     <OT as OdysseyType>::ECGHeader: Clone,
 {
@@ -420,7 +423,7 @@ where
     }
 }
 
-pub fn use_store<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize>, F>(
+pub fn use_store<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: ConcretizeTime<OT::Time>>, F>(
     build_store_handle: F,
 ) -> UseStore<OT, T>
 where
@@ -432,7 +435,7 @@ where
     use_hook(|| new_store_helper(&odyssey, scope, caller, build_store_handle).unwrap())
 }
 
-fn new_store_helper<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize>, F>(
+fn new_store_helper<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: ConcretizeTime<OT::Time>>, F>(
     odyssey: &Odyssey<CookbookApplication>,
     scope: ScopeId,
     caller: &'static Location,
@@ -484,7 +487,7 @@ where
     Some(UseStore { future, handle, state })
 }
 
-pub fn new_store_in_scope<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: Serialize>, F>(
+pub fn new_store_in_scope<OT: OdysseyType + 'static, T: CRDT<Time = OT::Time, Op: ConcretizeTime<OT::Time>>, F>(
     scope: ScopeId,
     build_store_handle: F,
 ) -> Option<UseStore<OT, T>>
@@ -566,9 +569,51 @@ where
 }
 */
 
-impl<OT: OdysseyType, T: CRDT<Time = OT::Time>> UseStore<OT, T>
-where
-    T::Op: Serialize,
+pub struct OperationBuilder<OT: OdysseyType, T: CRDT<Time = OT::Time, Op: ConcretizeTime<T::Time>>> {
+    handle: Rc<RefCell<StoreHandle<OT, T>>>,
+    parents: BTreeSet<<<OT as OdysseyType>::ECGHeader as ECGHeader>::HeaderId>,
+    operations: Vec<<T::Op as ConcretizeTime<T::Time>>::Serialized>,
+}
+
+const MAX_OPS: usize = 256; // TODO: This is already defined somewhere else?
+impl<OT: OdysseyType, T: CRDT<Time = OT::Time, Op: ConcretizeTime<OT::Time>>> OperationBuilder<OT, T> {
+    /// Queue up an operation to apply.
+    pub fn queue<F>(&mut self, f: F)
+    where
+        F: FnOnce(CausalTime<OT::Time>) -> <T::Op as ConcretizeTime<OT::Time>>::Serialized,
+    {
+        let t = CausalTime::current_time((self.operations.len() % MAX_OPS) as u8);
+        self.operations.push(f(t));
+    }
+
+    pub fn apply(self) -> Vec<<OT::ECGHeader as ECGHeader>::HeaderId>
+    where
+        // T::Op<CausalTime<OT::Time>>: Serialize,
+        T::Op: ConcretizeTime<T::Time>,
+        OT::ECGBody<T>: ECGBody<T::Op, <T::Op as ConcretizeTime<OT::Time>>::Serialized, Header = OT::ECGHeader>,
+    {
+        let mut ops = vec![];
+        let mut ret = vec![];
+        for op in self.operations {
+            if ops.len() >= MAX_OPS {
+                ret.push((*self.handle).borrow_mut().apply_batch(self.parents.clone(), ops));
+                ops = vec![];
+            }
+
+            ops.push(op);
+        }
+
+        if !ops.is_empty() {
+            ret.push((*self.handle).borrow_mut().apply_batch(self.parents, ops));
+        }
+
+        ret
+    }
+}
+
+impl<OT: OdysseyType, T: CRDT<Time = OT::Time, Op: ConcretizeTime<OT::Time>>> UseStore<OT, T>
+// where
+//     T::Op<CausalTime<OT::Time>>: Serialize,
 {
     // TODO: Apply operations, get current state, etc
     pub fn get_current_state(&self) -> Option<T>
@@ -587,26 +632,81 @@ where
         self.state.cloned()
     }
 
-    pub fn apply(
-        &mut self,
-        parents: BTreeSet<<<OT as OdysseyType>::ECGHeader as ECGHeader>::HeaderId>,
-        op: T::Op,
-    ) -> T::Time
+    // fn apply_helper(
+    //     &self,
+    //     op: T::Op<CausalTime<OT::Time>>,
+    // ) -> <OT::ECGHeader as ECGHeader>::HeaderId
+    // where
+    //     OT::ECGBody<T>: ECGBody<T, Header = OT::ECGHeader>,
+    // {
+    //     let parent_header_ids = {
+    //         let cookbook_store_state = self.state.peek();
+    //         let cookbook_store_state = cookbook_store_state.as_ref().expect("TODO");
+    //         cookbook_store_state.ecg.tips().clone()
+    //     };
+    //     (*self.handle).borrow_mut().apply(parent_header_ids, op)
+    // }
+
+    /// Applies an operation to the Store's CRDT with the closure the builds the operation. If  you want to apply multiple operations, use `operation_builder`.
+    pub fn apply<F>(
+        &self,
+        op: F,
+    ) -> OperationId<<OT::ECGHeader as ECGHeader>::HeaderId>
     where
-        // <<OT as OdysseyType>::ECGHeader as ECGHeader>::Body: ECGBody<T>,
-        OT::ECGBody<T>: ECGBody<T, Header = OT::ECGHeader>,
+        F: FnOnce(CausalTime<OT::Time>) -> <T::Op as ConcretizeTime<OT::Time>>::Serialized,
+        T::Op: ConcretizeTime<OT::Time>,
+        OT::ECGBody<T>: ECGBody<T::Op, <T::Op as ConcretizeTime<OT::Time>>::Serialized, Header = OT::ECGHeader>,
     {
-        (*self.handle).borrow_mut().apply(parents, op)
+        let parent_header_ids = {
+            let cookbook_store_state = self.state.peek();
+            let cookbook_store_state = cookbook_store_state.as_ref().expect("TODO");
+            cookbook_store_state.ecg.tips().clone()
+        };
+        self.apply_with_parents(parent_header_ids, op)
     }
 
-    pub fn apply_batch(
-        &mut self,
+    pub fn apply_with_parents<F>(
+        &self,
         parents: BTreeSet<<<OT as OdysseyType>::ECGHeader as ECGHeader>::HeaderId>,
-        op: Vec<T::Op>,
-    ) -> Vec<T::Time>
+        op: F,
+    ) -> OperationId<<OT::ECGHeader as ECGHeader>::HeaderId>
     where
-        OT::ECGBody<T>: ECGBody<T, Header = OT::ECGHeader>,
+        F: FnOnce(CausalTime<OT::Time>) -> <T::Op as ConcretizeTime<OT::Time>>::Serialized,
+        T::Op: ConcretizeTime<OT::Time>,
+        OT::ECGBody<T>: ECGBody<T::Op, <T::Op as ConcretizeTime<OT::Time>>::Serialized, Header = OT::ECGHeader>,
     {
-        (*self.handle).borrow_mut().apply_batch(parents, op)
+        let t = CausalTime::current_time(0);
+        let header_id = (*self.handle).borrow_mut().apply(parents, op(t));
+
+        OperationId {
+            header_id: Some(header_id),
+            operation_position: 0,
+        }
+    }
+
+    // pub fn apply_batch(
+    //     &mut self,
+    //     parents: BTreeSet<<<OT as OdysseyType>::ECGHeader as ECGHeader>::HeaderId>,
+    //     op: Vec<T::Op<CausalTime<OT::Time>>>,
+    // ) -> <OT::ECGHeader as ECGHeader>::HeaderId
+    // where
+    //     OT::ECGBody<T>: ECGBody<T, Header = OT::ECGHeader>,
+    // {
+    //     (*self.handle).borrow_mut().apply_batch(parents, op)
+    // }
+
+    pub fn operations_builder(&self) -> OperationBuilder<OT, T>
+    where 
+        T::Op: ConcretizeTime<OT::Time>,
+    {
+        let cookbook_store_state = self.state.peek();
+        let cookbook_store_state = cookbook_store_state.as_ref().expect("TODO");
+        let parent_header_ids = cookbook_store_state.ecg.tips().clone();
+
+        OperationBuilder {
+            handle: self.handle.clone(),
+            parents: parent_header_ids,
+            operations: vec![],
+        }
     }
 }
