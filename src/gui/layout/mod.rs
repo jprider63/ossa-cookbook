@@ -172,13 +172,13 @@ fn get_cookbook_store(
 
 fn get_recipe(mut view: SignalView, cookbook: &Cookbook, recipe_id: RecipeId) -> Option<&Recipe> {
     let recipe = cookbook.recipes.get(&recipe_id);
-    if recipe.is_none() {
-        // Recipe not found, so set no selection.
-        // TODO: Log this and display error.
-        error!("Recipe {:?} not found.", recipe_id);
+    // if recipe.is_none() {
+    //     // Recipe not found, so set no selection.
+    //     // TODO: Log this and display error.
+    //     error!("Recipe {:?} not found.", recipe_id);
 
-        view.set(View::NoSelection);
-    }
+    //     view.set(View::NoSelection);
+    // }
     recipe
 }
 
@@ -255,7 +255,18 @@ fn CookbookRecipeView(
 ) -> Element {
     let cookbook_store = get_cookbook_store(view, state, cookbook_id).expect("TODO"); // ?;
     let cookbook = cookbook_store.get_current_state().expect("TODO"); // ?;
-    let recipe = get_recipe(view, &cookbook, recipe_id).expect("TODO"); // ?;
+    let Some(recipe) = get_recipe(view, &cookbook, recipe_id) else {
+        return rsx!(
+            Sidebar { view: view, state: state }
+            div {
+                class: "content",
+                div {
+                    class: "flex justify-center items-center h-screen",
+                    "Loading..."
+                }
+            }
+        );
+    };
 
     rsx! (
         Sidebar { view: view, state: state }

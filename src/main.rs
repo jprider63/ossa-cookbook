@@ -90,7 +90,7 @@ impl MenuMap {
     }
 
     fn insert(&mut self, menuitem: MenuItem, operation: MenuOperation) {
-        self.id_to_op.try_insert(dbg!(menuitem.id()).clone(), operation).expect("Menu item already exists.");
+        self.id_to_op.try_insert(menuitem.id().clone(), operation).expect("Menu item already exists.");
         // self.op_to_menu.try_insert(operation, menuitem);
     }
 
