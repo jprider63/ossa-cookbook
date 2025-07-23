@@ -1,9 +1,8 @@
 
-use odyssey_core::core::CausalTime;
 use odyssey_core::store::ecg::v0::{HeaderId, OperationId};
+use odyssey_core::time::{CausalTime, ConcretizeTime};
 use odyssey_core::util::Sha256Hash;
 use odyssey_crdt::map::twopmap::TwoPMapOp;
-use odyssey_crdt::ConcretizeTime;
 use odyssey_crdt::{map::twopmap::TwoPMap, register::LWW, time::CausalState, CRDT};
 
 use serde::{Deserialize, Serialize};
@@ -79,11 +78,38 @@ pub enum CookbookOp<Time> {
     // Recipes(<TwoPMap<RecipeId, Recipe> as CRDT>::Op<Time>),
 }
 
-impl<Time> ConcretizeTime<Time> for CookbookOp<Time> {
+impl<HeaderId: Clone, Time: ConcretizeTime<HeaderId, Serialized = CausalTime<Time>>> ConcretizeTime<HeaderId> for Recipe<Time> {
+    type Serialized = Recipe<CausalTime<Time>>;
+
+    fn concretize_time(src: Self::Serialized, current_header: HeaderId) -> Self {
+        Recipe {
+            title: LWW::concretize_time(src.title, current_header.clone()),
+            ingredients: LWW::concretize_time(src.ingredients, current_header.clone()),
+            instructions: LWW::concretize_time(src.instructions, current_header.clone()),
+        }
+    }
+}
+
+impl<HeaderId, Time: ConcretizeTime<HeaderId, Serialized = CausalTime<Time>>> ConcretizeTime<HeaderId> for RecipeOp<Time> {
+    type Serialized = RecipeOp<CausalTime<Time>>;
+
+    fn concretize_time(src: Self::Serialized, current_header: HeaderId) -> Self {
+        match src {
+            RecipeOp::Title(lww) => RecipeOp::Title(LWW::concretize_time(lww, current_header)),
+            RecipeOp::Ingredients(lww) => RecipeOp::Ingredients(LWW::concretize_time(lww, current_header)),
+            RecipeOp::Instructions(lww) => RecipeOp::Instructions(LWW::concretize_time(lww, current_header)),
+        }
+    }
+}
+
+impl<HeaderId: Clone, Time: ConcretizeTime<HeaderId, Serialized = CausalTime<Time>>> ConcretizeTime<HeaderId> for CookbookOp<Time> {
     type Serialized = CookbookOp<CausalTime<Time>>;
 
-    fn concretize_time(src: Self::Serialized, header_id: Time) -> Self {
-        todo!()
+    fn concretize_time(src: Self::Serialized, current_time: HeaderId) -> Self {
+        match src {
+            CookbookOp::Title(lww) => CookbookOp::Title(<LWW<Time, String> as ConcretizeTime<HeaderId>>::concretize_time(lww, current_time)),
+            CookbookOp::Recipes(two_pmap_op) => CookbookOp::Recipes(TwoPMapOp::concretize_time(two_pmap_op, current_time)),
+        }
     }
 }
 

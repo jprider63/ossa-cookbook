@@ -9,9 +9,9 @@ use dioxus_heroicons::{solid::Shape, Icon};
 use dioxus_markdown::Markdown;
 // TODO: Fix outline icons.
 
-use odyssey_core::core::CausalTime;
 use odyssey_core::storage::memory::MemoryStorage;
 use odyssey_core::store::ecg::v0::OperationId;
+use odyssey_core::time::CausalTime;
 use odyssey_crdt::map::twopmap::{TwoPMap, TwoPMapOp};
 use odyssey_crdt::register::LWW;
 use tracing::{debug, error, warn};
