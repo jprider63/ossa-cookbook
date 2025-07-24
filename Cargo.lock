@@ -3669,7 +3669,7 @@ dependencies = [
 [[package]]
 name = "odyssey-core"
 version = "0.1.0"
-source = "git+https://github.com/jprider63/odyssey.git?rev=95e89575903ec58971ad26ac322be61a75fbb03d#95e89575903ec58971ad26ac322be61a75fbb03d"
+source = "git+https://github.com/jprider63/odyssey.git?rev=537a147a1108b033652df20cc03208ef98d13dd0#537a147a1108b033652df20cc03208ef98d13dd0"
 dependencies = [
  "async-recursion",
  "async-session-types",
@@ -3698,7 +3698,7 @@ dependencies = [
 [[package]]
 name = "odyssey-crdt"
 version = "0.1.0"
-source = "git+https://github.com/jprider63/odyssey.git?rev=95e89575903ec58971ad26ac322be61a75fbb03d#95e89575903ec58971ad26ac322be61a75fbb03d"
+source = "git+https://github.com/jprider63/odyssey.git?rev=537a147a1108b033652df20cc03208ef98d13dd0#537a147a1108b033652df20cc03208ef98d13dd0"
 dependencies = [
  "im",
  "serde",
@@ -5984,7 +5984,7 @@ dependencies = [
 [[package]]
 name = "typeable"
 version = "0.1.0"
-source = "git+https://github.com/jprider63/odyssey.git?rev=95e89575903ec58971ad26ac322be61a75fbb03d#95e89575903ec58971ad26ac322be61a75fbb03d"
+source = "git+https://github.com/jprider63/odyssey.git?rev=537a147a1108b033652df20cc03208ef98d13dd0#537a147a1108b033652df20cc03208ef98d13dd0"
 dependencies = [
  "im",
  "lazy_static",
@@ -5996,7 +5996,7 @@ dependencies = [
 [[package]]
 name = "typeable_derive"
 version = "0.1.0"
-source = "git+https://github.com/jprider63/odyssey.git?rev=95e89575903ec58971ad26ac322be61a75fbb03d#95e89575903ec58971ad26ac322be61a75fbb03d"
+source = "git+https://github.com/jprider63/odyssey.git?rev=537a147a1108b033652df20cc03208ef98d13dd0#537a147a1108b033652df20cc03208ef98d13dd0"
 dependencies = [
  "proc-macro2",
  "quote",

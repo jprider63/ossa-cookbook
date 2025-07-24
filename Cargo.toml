@@ -15,9 +15,9 @@ futures = "*"
 keyboard-types = "*"
 im = "15.1.0"
 manganis = "*"
-odyssey-core = {git = "https://github.com/jprider63/odyssey.git", rev="95e89575903ec58971ad26ac322be61a75fbb03d"}
-odyssey-crdt = {git = "https://github.com/jprider63/odyssey.git", rev="95e89575903ec58971ad26ac322be61a75fbb03d"}
-typeable = {git = "https://github.com/jprider63/odyssey.git", rev="95e89575903ec58971ad26ac322be61a75fbb03d", features=["im"]}
+odyssey-core = {git = "https://github.com/jprider63/odyssey.git", rev="537a147a1108b033652df20cc03208ef98d13dd0"}
+odyssey-crdt = {git = "https://github.com/jprider63/odyssey.git", rev="537a147a1108b033652df20cc03208ef98d13dd0"}
+typeable = {git = "https://github.com/jprider63/odyssey.git", rev="537a147a1108b033652df20cc03208ef98d13dd0", features=["im"]}
 serde = "*"
 tauri = "2.2.4"
 tracing = "*"
