@@ -11,13 +11,14 @@ use dioxus_markdown::Markdown;
 
 use odyssey_core::storage::memory::MemoryStorage;
 use odyssey_core::store::ecg::v0::OperationId;
+use odyssey_core::time::CausalTime;
 use odyssey_crdt::map::twopmap::{TwoPMap, TwoPMapOp};
 use odyssey_crdt::register::LWW;
 use tracing::{debug, error, warn};
 
 use crate::gui::layout::cookbook::form::{new_cookbook_form, valid_new_cookbook_form};
 use crate::gui::layout::recipe::form::{recipe_form, valid_recipe_form};
-use crate::state::{Cookbook, CookbookId, CookbookOp, Recipe, RecipeId, RecipeOp, State};
+use crate::state::{Cookbook, CookbookId, CookbookOp, Recipe, RecipeId, RecipeOp, State, Time};
 
 use crate::{new_store_in_scope, use_store, CookbookApplication, MenuMap, MenuOperation, OdysseyProp, UseStore};
 
@@ -171,13 +172,13 @@ fn get_cookbook_store(
 
 fn get_recipe(mut view: SignalView, cookbook: &Cookbook, recipe_id: RecipeId) -> Option<&Recipe> {
     let recipe = cookbook.recipes.get(&recipe_id);
-    if recipe.is_none() {
-        // Recipe not found, so set no selection.
-        // TODO: Log this and display error.
-        error!("Recipe {:?} not found.", recipe_id);
+    // if recipe.is_none() {
+    //     // Recipe not found, so set no selection.
+    //     // TODO: Log this and display error.
+    //     error!("Recipe {:?} not found.", recipe_id);
 
-        view.set(View::NoSelection);
-    }
+    //     view.set(View::NoSelection);
+    // }
     recipe
 }
 
@@ -254,7 +255,18 @@ fn CookbookRecipeView(
 ) -> Element {
     let cookbook_store = get_cookbook_store(view, state, cookbook_id).expect("TODO"); // ?;
     let cookbook = cookbook_store.get_current_state().expect("TODO"); // ?;
-    let recipe = get_recipe(view, &cookbook, recipe_id).expect("TODO"); // ?;
+    let Some(recipe) = get_recipe(view, &cookbook, recipe_id) else {
+        return rsx!(
+            Sidebar { view: view, state: state }
+            div {
+                class: "content",
+                div {
+                    class: "flex justify-center items-center h-screen",
+                    "Loading..."
+                }
+            }
+        );
+    };
 
     rsx! (
         Sidebar { view: view, state: state }
@@ -335,14 +347,67 @@ fn CookbookRecipeNewView(
     cookbook_id: CookbookId,
 ) -> Element {
     let cookbook_store = get_cookbook_store(view, state, cookbook_id).expect("TODO"); // ?;
-    let cookbook = cookbook_store.get_current_state().expect("TODO"); // ?;
+
+    let (form, form_state) = recipe_form(None);
+
+    let create_handler = move |mut _e| {
+        // Validate all fields.
+        if !valid_recipe_form(&form_state) {
+            return;
+        }
+
+        let recipe_id = cookbook_store.apply(|t| {
+            let recipe = crate::state::internal::Recipe {
+                title: LWW::new(t, form_state.name.peek().clone()),
+                ingredients: LWW::new(t, form_state.ingredients.peek().clone()),
+                instructions: LWW::new(t, form_state.instructions.peek().clone()),
+            };
+            let op = CookbookOp::Recipes(TwoPMapOp::Insert { key: t, value: recipe });
+            debug!("op: {:?}", op);
+            op
+        });
+
+        view.set(View::CookbookRecipe(cookbook_id, recipe_id));
+    };
     rsx!(
         Sidebar { view: view, state: state }
         div {
             class: "content",
-            p {
-                "TODO: Create recipe function"
+            nav {
+                class: "flex w-full mt-4 mb-6",
+                div {
+                    class: "flex-1 flex justify-start mr-auto whitespace-nowrap",
+                    div {
+                        class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
+                        onclick: move |_e| {view.set(View::Cookbook(cookbook_id))},
+                        Icon {
+                            class: "w-6 h-6",
+                            icon: Shape::ChevronLeft,
+                        },
+                        span {
+                            "Cancel" // "{recipe.title}"
+                        }
+                    }
+                }
+                div {
+                    class: "whitespace-nowrap",
+                    h1 {
+                        class: "text-3xl font-bold text-center",
+                            "New Recipe"
+                    }
+                }
+                div {
+                    class: "flex-1 flex justify-end ml-auto whitespace-nowrap",
+                    div {
+                        class: "text-blue-500 hover:text-blue-400 inline-flex items-center px-3",
+                        onclick: create_handler, // TODO: Enabled based on if valid? Or set is_modified to true for all fields.
+                        span {
+                            "Create"
+                        }
+                    }
+                }
             }
+            { form }
         }
     )
 }
@@ -357,12 +422,11 @@ fn CookbookRecipeEditView(
     let mut cookbook_store = get_cookbook_store(view, state, cookbook_id).expect("TODO"); // ?;
     let cookbook_store_state = cookbook_store.get_current_store_state().expect("TODO"); // ?;
     let old_cookbook = cookbook_store_state.state;
-    let parent_header_ids = cookbook_store_state.ecg.tips().clone();
 
     let old_recipe = get_recipe(view, &old_cookbook, recipe_id).expect("TODO"); // ?;
 
     let old_recipe = old_recipe.clone();
-    let (form, form_state) = recipe_form(&old_recipe);
+    let (form, form_state) = recipe_form(Some(&old_recipe));
 
     let save_handler = move |mut _e| {
         // Validate all fields.
@@ -370,35 +434,45 @@ fn CookbookRecipeEditView(
             return;
         }
 
-        let mut pending_ops = Vec::new(); // cookbook.create_batch_operations();
+        // let mut pending_ops: Vec<impl FnOnce<CausalTime<Time>, Output = CookbookOp>> = Vec::new(); // cookbook.create_batch_operations();
+        let mut pending_ops = cookbook_store.operations_builder();
+
+        let helper = |op| {
+            CookbookOp::Recipes(TwoPMapOp::Apply {
+                key: CausalTime::time(recipe_id),
+                operation: op,
+            })
+        };
 
         // Diff all fields.
         let new_name = form_state.name.peek();
         let new_ingredients = form_state.ingredients.peek();
         let new_instructions = form_state.instructions.peek();
         if *old_recipe.title.value() != *new_name {
-            pending_ops.push(RecipeOp::Title(new_name.clone()));
+            pending_ops.queue(|t| helper(RecipeOp::Title(LWW::new(t, new_name.clone()))));
         }
         if *old_recipe.ingredients.value() != *new_ingredients {
-            pending_ops.push(RecipeOp::Ingredients(new_ingredients.clone()));
+            pending_ops.queue(|t| helper(RecipeOp::Ingredients(LWW::new(t, new_ingredients.clone()))));
         }
         if *old_recipe.instructions.value() != *new_instructions {
-            pending_ops.push(RecipeOp::Instructions(new_instructions.clone()));
+            pending_ops.queue(|t| helper(RecipeOp::Instructions(LWW::new(t, new_instructions.clone()))));
         }
 
         // Save updated fields by applying CRDT operations.
+        let _ids = pending_ops.apply();
+
         // cookbook_store.apply_batch_operations(pending_ops);
-        let ops = pending_ops
-            .into_iter()
-            .map(|op| {
-                CookbookOp::Recipes(TwoPMapOp::Apply {
-                    key: recipe_id,
-                    operation: op,
-                })
-            })
-            .collect();
-        debug!("ops: {:?}", ops);
-        cookbook_store.apply_batch(parent_header_ids.clone(), ops);
+        // let ops = pending_ops
+        //     .into_iter()
+        //     .map(|op| {
+        //         CookbookOp::Recipes(TwoPMapOp::Apply {
+        //             key: recipe_id,
+        //             operation: op,
+        //         })
+        //     })
+        //     .collect();
+        // debug!("ops: {:?}", ops);
+        // cookbook_store.apply_batch(parent_header_ids.clone(), ops);
 
         // TODO: Send CRDT operations
         // let mut new_cookbook = old_cookbook.clone();
