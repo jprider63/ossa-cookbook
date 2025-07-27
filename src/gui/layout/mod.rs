@@ -22,6 +22,8 @@ use crate::state::{Cookbook, CookbookId, CookbookOp, Recipe, RecipeId, RecipeOp,
 
 use crate::{new_store_in_scope, use_store, CookbookApplication, MenuMap, MenuOperation, OdysseyProp, UseStore};
 
+const RECIPE_ICON: Asset = asset!("/img/recipe_icon.svg");
+
 pub(crate) enum View {
     Login,
     NoSelection,
@@ -223,9 +225,12 @@ fn CookbookView(view: SignalView, state: Signal<State>, cookbook_id: CookbookId)
                                     icon: Shape::Plus,
                                 }
                             }
-                            p {
-                                class: "p-5 text-center",
-                                "New Recipe"
+                            div {
+                                // class: "border-t",
+                                p {
+                                    class: "p-5 text-center",
+                                    "New Recipe"
+                                }
                             }
                         }
                     }
@@ -541,7 +546,8 @@ fn RecipePill(
                 class: "recipe-card",
                 onclick: move |_e| {view.set(View::CookbookRecipe(cookbook_id, recipe_id))},
                 img {
-                    src: "https://food.fnr.sndimg.com/content/dam/images/food/fullset/2008/8/14/0/GT0107_kalbi_s4x3.jpg.rend.hgtvcom.1280.720.suffix/1519669666497.jpeg"
+                    class: "p-5",
+                    src: RECIPE_ICON,
                 }
                 div {
                     class: "border-t",
