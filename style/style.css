@@ -17,7 +17,7 @@ html, body {
 
 body {
     overflow-x: hidden;
-		@apply /*bg-gray-50*/ bg-white text-gray-800 antialiased;
+    @apply /*bg-gray-50*/ bg-white text-gray-800 antialiased;
 }
 
 .wrapper {
@@ -41,12 +41,12 @@ body {
 }
 
 .recipe-card {
-    @apply rounded-xl overflow-hidden border m-3 hover:bg-gray-50 hover:text-gray-900;
-		min-width: 158px;
+    @apply min-h-full flex flex-col rounded-xl overflow-hidden border hover:bg-gray-50 hover:text-gray-900;
+    min-width: 158px;
 }
 
 .new-recipe {
-    @apply rounded-full border-2 border-dashed p-6 mt-6 mx-auto mb-2;
+    @apply aspect-square rounded-full border-2 border-dashed p-6 mx-auto;
     width: 108px;
 }
 
@@ -73,3 +73,4 @@ body {
 .instructions {
     @apply space-y-3;
 }
+
