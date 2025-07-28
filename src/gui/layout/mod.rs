@@ -219,11 +219,11 @@ fn CookbookView(view: SignalView, state: Signal<State>, cookbook_id: CookbookId)
                             class: "recipe-card",
                             onclick: move |_e| {view.set(View::CookbookRecipeNew(cookbook_id))},
                             div {
-                                class: "grow",
+                                class: "grow grid place-content-center",
                                 div {
                                     class: "new-recipe",
                                     Icon {
-                                        class: "w-14 h-14",
+                                        class: "w-14 h-14 text-gray-600",
                                         icon: Shape::Plus,
                                     }
                                 }

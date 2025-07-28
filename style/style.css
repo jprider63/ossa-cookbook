@@ -46,7 +46,7 @@ body {
 }
 
 .new-recipe {
-    @apply aspect-square rounded-full border-2 border-dashed p-6 mt-6 mx-auto mb-2;
+    @apply aspect-square rounded-full border-2 border-dashed p-6 mx-auto;
     width: 108px;
 }
 
