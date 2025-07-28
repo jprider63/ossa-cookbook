@@ -211,18 +211,21 @@ fn CookbookView(view: SignalView, state: Signal<State>, cookbook_id: CookbookId)
                     }
                 }
                 div {
-                    class: "flex flex-row flex-wrap",
+                    class: "flex flex-row flex-wrap items-strech justify-center",
                     { pills },
                     div {
-                        class: "basis-1/3",
+                        class: "basis-1/3 p-3",
                         div {
                             class: "recipe-card",
                             onclick: move |_e| {view.set(View::CookbookRecipeNew(cookbook_id))},
                             div {
-                                class: "new-recipe",
-                                Icon {
-                                    class: "w-14 h-14",
-                                    icon: Shape::Plus,
+                                class: "grow",
+                                div {
+                                    class: "new-recipe",
+                                    Icon {
+                                        class: "w-14 h-14",
+                                        icon: Shape::Plus,
+                                    }
                                 }
                             }
                             div {
@@ -541,12 +544,12 @@ fn RecipePill(
 ) -> Element {
     rsx! (
         div {
-            class: "basis-1/3",
+            class: "basis-1/3 p-3",
             div {
                 class: "recipe-card",
                 onclick: move |_e| {view.set(View::CookbookRecipe(cookbook_id, recipe_id))},
                 img {
-                    class: "p-5",
+                    class: "p-5 mx-auto grow",
                     src: RECIPE_ICON,
                 }
                 div {
