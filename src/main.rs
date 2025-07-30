@@ -284,16 +284,17 @@ fn app() -> Element {
     // });
 
     // let odyssey = use_context::<OdysseyProp<CookbookApplication>>().odyssey;
-    let recipe_store = use_store(|odyssey| {
-        let init_st: Cookbook = initial_demo_state();
-        (*odyssey).create_store::<Cookbook, _>(init_st, MemoryStorage::new())
-    });
+    // let recipe_store = use_store(|odyssey| {
+    //     let init_st: Cookbook = initial_demo_state();
+    //     (*odyssey).create_store::<Cookbook, _>(init_st, MemoryStorage::new())
+    // });
     let state = use_signal(|| {
         // let odyssey: Odyssey<CookbookApplication> = todo!();
         // let init_st = initial_demo_state();
         // let recipe_store = (*odyssey).create_store(init_st, MemoryStorage::new());
         // let recipe_store = use_store(recipe_store);
-        vec![recipe_store]
+        // vec![recipe_store]
+        vec![]
     });
     // let state = State {
     //     cookbooks: vec![recipe_store],

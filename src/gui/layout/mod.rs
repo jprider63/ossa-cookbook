@@ -214,7 +214,7 @@ fn CookbookView(view: SignalView, state: Signal<State>, cookbook_id: CookbookId)
                     class: "flex flex-row flex-wrap items-strech justify-center",
                     { pills },
                     div {
-                        class: "basis-1/3 p-3",
+                        class: "basis-1/3 p-3 min-h-[230px]",
                         div {
                             class: "recipe-card",
                             onclick: move |_e| {view.set(View::CookbookRecipeNew(cookbook_id))},
