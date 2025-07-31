@@ -1,14 +1,13 @@
 
-use odyssey_core::store::ecg::v0::{HeaderId, OperationId};
-use odyssey_core::time::{CausalTime, ConcretizeTime};
-use odyssey_core::util::Sha256Hash;
-use odyssey_crdt::map::twopmap::TwoPMapOp;
-use odyssey_crdt::{map::twopmap::TwoPMap, register::LWW, time::CausalState, CRDT};
+use ossa_core::store::ecg::v0::{HeaderId, OperationId};
+use ossa_core::time::{CausalTime, ConcretizeTime};
+use ossa_core::util::Sha256Hash;
+use ossa_crdt::map::twopmap::TwoPMapOp;
+use ossa_crdt::{map::twopmap::TwoPMap, register::LWW, time::CausalState, CRDT};
+use ossa_dioxus::{DefaultSetup, UseStore};
 
 use serde::{Deserialize, Serialize};
 use typeable::Typeable;
-
-use crate::{CookbookApplication, UseStore};
 
 pub type Time = OperationId<HeaderId<Sha256Hash>>;
 
@@ -136,7 +135,7 @@ impl<Time: Ord + Clone> CRDT for Cookbook<Time> {
     }
 }
 
-pub type State = Vec<UseStore<CookbookApplication, Cookbook<Time>>>;
+pub type State = Vec<UseStore<DefaultSetup, Cookbook<Time>>>;
 
 // impl<T, U> OperationFunctor<T, U> for RecipeOp<T> {
 //     type Target<Time> = RecipeOp<Time>;
@@ -164,6 +163,6 @@ pub type State = Vec<UseStore<CookbookApplication, Cookbook<Time>>>;
 // use std::marker::PhantomData;
 // #[derive(Props)]
 // pub struct State<'a> {
-//     pub cookbooks: Vec<UseStore<CookbookApplication, Cookbook>>,
+//     pub cookbooks: Vec<UseStore<DefaultSetup, Cookbook>>,
 //     _phantom: PhantomData<'a, ()>,
 // }

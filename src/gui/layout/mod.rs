@@ -9,18 +9,19 @@ use dioxus_heroicons::{solid::Shape, Icon};
 use dioxus_markdown::Markdown;
 // TODO: Fix outline icons.
 
-use odyssey_core::storage::memory::MemoryStorage;
-use odyssey_core::store::ecg::v0::OperationId;
-use odyssey_core::time::CausalTime;
-use odyssey_crdt::map::twopmap::{TwoPMap, TwoPMapOp};
-use odyssey_crdt::register::LWW;
+use ossa_core::storage::memory::MemoryStorage;
+use ossa_core::store::ecg::v0::OperationId;
+use ossa_core::time::CausalTime;
+use ossa_crdt::map::twopmap::{TwoPMap, TwoPMapOp};
+use ossa_crdt::register::LWW;
+use ossa_dioxus::{new_store_in_scope, DefaultSetup, OssaProp, UseStore};
 use tracing::{debug, error, warn};
 
 use crate::gui::layout::cookbook::form::{new_cookbook_form, valid_new_cookbook_form};
 use crate::gui::layout::recipe::form::{recipe_form, valid_recipe_form};
 use crate::state::{Cookbook, CookbookId, CookbookOp, Recipe, RecipeId, RecipeOp, State, Time};
 
-use crate::{new_store_in_scope, use_store, CookbookApplication, MenuMap, MenuOperation, OdysseyProp, UseStore};
+use crate::{use_store, MenuMap, MenuOperation};
 
 const RECIPE_ICON: Asset = asset!("/img/recipe_icon.svg");
 
@@ -85,10 +86,10 @@ impl SignalView {
 
 
 #[component]
-// pub fn layout(cx: Scope, state: Vec<UseStore<CookbookApplication, Cookbook>>) -> Element {
+// pub fn layout(cx: Scope, state: Vec<UseStore<DefaultSetup, Cookbook>>) -> Element {
 pub fn layout(
     view: SignalView,
-    state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>,
+    state: Signal<Vec<UseStore<DefaultSetup, Cookbook>>>,
     root_scope: ScopeId,
 ) -> Element {
     let v = view.read();
@@ -160,7 +161,7 @@ fn get_cookbook_store(
     mut view: SignalView,
     state: Signal<State>,
     cookbook_id: CookbookId,
-) -> Option<UseStore<CookbookApplication, Cookbook>> {
+) -> Option<UseStore<DefaultSetup, Cookbook>> {
     let cookbook = state.with(|state| state.get(cookbook_id).cloned()); // TODO: Can we avoid this clone? Return a ref?
     if cookbook.is_none() {
         // Cookbook not found, so set no selection.
@@ -429,9 +430,9 @@ fn CookbookRecipeEditView(
 ) -> Element {
     let mut cookbook_store = get_cookbook_store(view, state, cookbook_id).expect("TODO"); // ?;
     let cookbook_store_state = cookbook_store.get_current_store_state().expect("TODO"); // ?;
-    let old_cookbook = cookbook_store_state.state;
+    let old_cookbook = cookbook_store_state.state();
 
-    let old_recipe = get_recipe(view, &old_cookbook, recipe_id).expect("TODO"); // ?;
+    let old_recipe = get_recipe(view, old_cookbook, recipe_id).expect("TODO"); // ?;
 
     let old_recipe = old_recipe.clone();
     let (form, form_state) = recipe_form(Some(&old_recipe));
@@ -758,9 +759,9 @@ fn ConnectToPeerView(
 
     let mut address = use_signal(|| "127.0.0.1:8080".to_string());
 
-    let odyssey = use_context::<OdysseyProp<CookbookApplication>>().odyssey;
+    let ossa_prop = use_context::<OssaProp<DefaultSetup>>();
     let connect_handler = move |_| {
-        odyssey.connect_to_peer_ipv4("127.0.0.1:8080".parse().unwrap());
+        ossa_prop.ossa().connect_to_peer_ipv4("127.0.0.1:8080".parse().unwrap());
     };
 
     pub fn validate_ipv4_address(address: &str) -> Result<(), &'static str> {
@@ -808,7 +809,7 @@ fn ConnectToStoreView(
 
     let mut store_id = use_signal(|| "".to_string());
 
-    // let odyssey = use_context::<OdysseyProp<CookbookApplication>>().odyssey;
+    // let odyssey = use_context::<OdysseyProp<DefaultSetup>>().odyssey;
     let connect_handler = move |_| {
         let store_id = store_id.peek().parse().expect("TODO");
         debug!("Connecting to store: {:?}", store_id);
