@@ -13,14 +13,14 @@ pub use internal::{CookbookOp, RecipeOp, State, Time};
 
 
 // TODO: Actually switch to the corresponding CRDTs.
-pub type Sequence<A> = Vec<A>;
-pub type OrderedMap<K, V> = BTreeMap<K, V>;
-pub type RGA<A> = A;
-
-pub type OdysseyRef<A> = A;
-pub type Image = ();
-
-pub type UserId = u32;
+// pub type Sequence<A> = Vec<A>;
+// pub type OrderedMap<K, V> = BTreeMap<K, V>;
+// pub type RGA<A> = A;
+// 
+// pub type OssaRef<A> = A;
+// pub type Image = ();
+// 
+// pub type UserId = u32;
 // pub type Time = OperationId<Header<Sha256Hash, impl CRDT>, impl CRDT>;
 
 pub type CookbookId = internal::CookbookId;

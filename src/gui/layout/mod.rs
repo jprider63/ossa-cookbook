@@ -685,8 +685,8 @@ fn CookbookNewView(
             title: LWW::new(OperationId::new(None, 0), form_state.name.peek().to_string()),
             recipes: TwoPMap::new(),
         };
-        let cookbook_store = new_store_in_scope(root_scope, |odyssey| {
-            (*odyssey).create_store(cookbook, MemoryStorage::new())
+        let cookbook_store = new_store_in_scope(root_scope, |ossa| {
+            (*ossa).create_store(cookbook, MemoryStorage::new())
         }).unwrap();
 
         let cookbook_id = state.len();
@@ -809,13 +809,12 @@ fn ConnectToStoreView(
 
     let mut store_id = use_signal(|| "".to_string());
 
-    // let odyssey = use_context::<OdysseyProp<DefaultSetup>>().odyssey;
+    // let ossa = use_context::<OssaProp<DefaultSetup>>().ossa;
     let connect_handler = move |_| {
         let store_id = store_id.peek().parse().expect("TODO");
         debug!("Connecting to store: {:?}", store_id);
-        let recipe_store = new_store_in_scope(root_scope, |odyssey| {
-        // let recipe_store = use_store(|odyssey| {
-            odyssey.connect_to_store::<Cookbook>(store_id) // , MemoryStorage::new());
+        let recipe_store = new_store_in_scope(root_scope, |ossa| {
+            ossa.connect_to_store::<Cookbook>(store_id)
         }).expect("Failed to connect_to_store");
         let cookbook_id = state.len();
         state.push(recipe_store);

@@ -120,30 +120,30 @@ fn main() {
     // println!("typeid: {}", Header::<Sha256Hash, ()>::type_ident());
 
     let port = args.port.unwrap_or(8080);
-    let odyssey_config = OssaConfig {
+    let ossa_config = OssaConfig {
         // address: SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), port),
         // TODO: IPV4 and/or IPV6
         port,
     };
     // // TODO: switch to this API XXX
-    // let odyssey: Ossa<Sha256Hash> = Ossa::new(odyssey_config);
-    // odyssey.go_online(); // start_network(); // Starts server, connects to DHT, connect to known peers, etc
-    // // odyssey.go_offline(); // stop_network();
-    // let odyssey: Ossa<CookbookApplication> = Ossa::start(odyssey_config);
+    // let ossa: Ossa<Sha256Hash> = Ossa::new(ossa_config);
+    // ossa.go_online(); // start_network(); // Starts server, connects to DHT, connect to known peers, etc
+    // // ossa.go_offline(); // stop_network();
+    // let ossa: Ossa<CookbookApplication> = Ossa::start(ossa_config);
 
     // if args.port.is_some() {
     //     // TODO: join_store()
     // } else {
     //     let init_st = initial_demo_state();
-    //     let recipe_store = odyssey.create_store(init_st, MemoryStorage::new()); // TODO: Owner, initial state
+    //     let recipe_store = ossa.create_store(init_st, MemoryStorage::new()); // TODO: Owner, initial state
     //     // JP: We also want a load_store()?
     // }
 
     // let init_st = initial_demo_state();
-    // let recipe_store = odyssey.create_store(init_st, MemoryStorage::new());
+    // let recipe_store = ossa.create_store(init_st, MemoryStorage::new());
 
     // if let Some(port) = args.port {
-    //     let odyssey_manager = P2PManager::initialize::<Sha256Hash,Sha256Hash>(P2PSettings {address: SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), port)});
+    //     let ossa_manager = P2PManager::initialize::<Sha256Hash,Sha256Hash>(P2PSettings {address: SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), port)});
     // } else {
     //     cli::run_client();
     // }
@@ -204,13 +204,13 @@ fn main() {
     let w = dioxus_desktop::WindowBuilder::new().with_title(app_name);
     // .with_menu(menu); // TODO XXX
     let c = dioxus_desktop::Config::new().with_window(w).with_menu(menu);
-    // let odyssey_prop = OssaProp::new(odyssey);
-    // dioxus_desktop::launch_with_props(app, odyssey_prop, c);
+    // let ossa_prop = OssaProp::new(ossa);
+    // dioxus_desktop::launch_with_props(app, ossa_prop, c);
     dioxus_desktop::launch::launch(
         app,
         vec![
             Box::new(move || {
-                let ossa: Ossa<DefaultSetup> = Ossa::start(odyssey_config);
+                let ossa: Ossa<DefaultSetup> = Ossa::start(ossa_config);
                 let ossa_prop = OssaProp::new(ossa);
                 Box::new(ossa_prop)
             }),
@@ -284,15 +284,15 @@ fn app() -> Element {
     //     initial_demo_state()
     // });
 
-    // let odyssey = use_context::<OssaProp<CookbookApplication>>().odyssey;
-    let recipe_store = use_store(|odyssey| {
+    // let ossa = use_context::<OssaProp<CookbookApplication>>().ossa;
+    let recipe_store = use_store(|ossa| {
         let init_st: Cookbook = initial_demo_state();
-        (*odyssey).create_store::<Cookbook, _>(init_st, MemoryStorage::new())
+        (*ossa).create_store::<Cookbook, _>(init_st, MemoryStorage::new())
     });
     let state = use_signal(|| {
-        // let odyssey: Ossa<CookbookApplication> = todo!();
+        // let ossa: Ossa<CookbookApplication> = todo!();
         // let init_st = initial_demo_state();
-        // let recipe_store = (*odyssey).create_store(init_st, MemoryStorage::new());
+        // let recipe_store = (*ossa).create_store(init_st, MemoryStorage::new());
         // let recipe_store = use_store(recipe_store);
         vec![recipe_store]
     });

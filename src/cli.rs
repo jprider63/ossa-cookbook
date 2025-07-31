@@ -9,9 +9,9 @@ pub(crate) struct Arguments {
 }
 
 // // TMP for testing
-// use odyssey_core::network::protocol::run_store_metadata_client;
-// use odyssey_core::protocol::v0::StoreMetadataHeaderRequest;
-// use odyssey_core::util::Sha256Hash;
+// use ossa_core::network::protocol::run_store_metadata_client;
+// use ossa_core::protocol::v0::StoreMetadataHeaderRequest;
+// use ossa_core::util::Sha256Hash;
 // use tokio::net::TcpStream;
 // use tokio_util::codec::{self, LengthDelimitedCodec};
 // pub(crate) fn run_client() {

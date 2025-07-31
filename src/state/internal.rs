@@ -18,7 +18,7 @@ pub struct Recipe<Time> {
     pub title: LWW<Time, String>,
     pub ingredients: LWW<Time, Vec<String>>, // Sequence<String>,
     pub instructions: LWW<Time, String>,     // RGA<String>,
-                                             // pub image: Sequence<OdysseyRef<Image>>, // Sequence?
+                                             // pub image: Sequence<OssaRef<Image>>, // Sequence?
 }
 
 // TODO: Define the CBOR for this properly
