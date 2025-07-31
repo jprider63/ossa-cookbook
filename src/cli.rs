@@ -22,7 +22,7 @@ pub(crate) struct Arguments {
 //             .expect("Failed to connect to server");
 //         let stream = codec::Framed::new(tcpstream, LengthDelimitedCodec::new());
 //         let mut stream = TypedStream::new(stream);
-// 
+//
 //         let req = StoreMetadataHeaderRequest {
 //             store_id: Sha256Hash([0; 32]),
 //             body_request: None,
@@ -30,7 +30,7 @@ pub(crate) struct Arguments {
 //         let response = run_store_metadata_client::<Sha256Hash, _>(&mut stream, req)
 //             .await
 //             .unwrap();
-// 
+//
 //         println!("Recieved: {:?}", response);
 //     })
 // }

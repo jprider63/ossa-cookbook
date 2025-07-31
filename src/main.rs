@@ -19,7 +19,6 @@ use ossa_core::{core::OssaType, Ossa, OssaConfig};
 use ossa_crdt::{map::twopmap::TwoPMap, register::LWW, time::LamportTimestamp, CRDT};
 use ossa_dioxus::{use_store, DefaultSetup, OssaProp};
 use serde::Serialize;
-use tracing::{debug, info, trace};
 use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet};
@@ -27,6 +26,7 @@ use std::future::Future;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::panic::Location;
 use std::rc::Rc;
+use tracing::{debug, info, trace};
 
 use crate::gui::layout::SignalView;
 use crate::state::*;
@@ -87,11 +87,15 @@ struct MenuMap {
 
 impl MenuMap {
     fn new() -> Self {
-        Self { id_to_op: BTreeMap::new()} // , op_to_menu: BTreeMap::new() }
+        Self {
+            id_to_op: BTreeMap::new(),
+        } // , op_to_menu: BTreeMap::new() }
     }
 
     fn insert(&mut self, menuitem: MenuItem, operation: MenuOperation) {
-        self.id_to_op.try_insert(menuitem.id().clone(), operation).expect("Menu item already exists.");
+        self.id_to_op
+            .try_insert(menuitem.id().clone(), operation)
+            .expect("Menu item already exists.");
         // self.op_to_menu.try_insert(operation, menuitem);
     }
 
@@ -151,39 +155,79 @@ fn main() {
     let mut menu_id_map = MenuMap::new();
 
     let mut about_menu = Submenu::new(app_name, true);
-    about_menu.append(&PredefinedMenuItem::about(None, None)).expect("TODO");
-    about_menu.append(&PredefinedMenuItem::separator()).expect("TODO");
-    about_menu.append(&PredefinedMenuItem::hide(None)).expect("TODO");
-    about_menu.append(&PredefinedMenuItem::hide_others(None)).expect("TODO");
-    about_menu.append(&PredefinedMenuItem::show_all(None)).expect("TODO");
-    about_menu.append(&PredefinedMenuItem::separator()).expect("TODO");
-    about_menu.append(&PredefinedMenuItem::quit(None)).expect("TODO");
+    about_menu
+        .append(&PredefinedMenuItem::about(None, None))
+        .expect("TODO");
+    about_menu
+        .append(&PredefinedMenuItem::separator())
+        .expect("TODO");
+    about_menu
+        .append(&PredefinedMenuItem::hide(None))
+        .expect("TODO");
+    about_menu
+        .append(&PredefinedMenuItem::hide_others(None))
+        .expect("TODO");
+    about_menu
+        .append(&PredefinedMenuItem::show_all(None))
+        .expect("TODO");
+    about_menu
+        .append(&PredefinedMenuItem::separator())
+        .expect("TODO");
+    about_menu
+        .append(&PredefinedMenuItem::quit(None))
+        .expect("TODO");
 
     let mut file_menu = Submenu::new("File", true);
-    let new_cookbook_menu_item = MenuItem::new("New Cookbook", true, Some(Accelerator::new(Some(Modifiers::SUPER), Code::KeyN)));
+    let new_cookbook_menu_item = MenuItem::new(
+        "New Cookbook",
+        true,
+        Some(Accelerator::new(Some(Modifiers::SUPER), Code::KeyN)),
+    );
     file_menu.append(&new_cookbook_menu_item).expect("TODO");
     menu_id_map.insert(new_cookbook_menu_item, MenuOperation::NewCookbook);
     let new_recipe_menu_item = MenuItem::new("New Recipe", false, None);
     file_menu.append(&new_recipe_menu_item).expect("TODO");
     menu_id_map.insert(new_recipe_menu_item, MenuOperation::NewCookbookRecipe);
-    file_menu.append(&PredefinedMenuItem::separator()).expect("TODO");
-    file_menu.append(&PredefinedMenuItem::close_window(None)).unwrap();
+    file_menu
+        .append(&PredefinedMenuItem::separator())
+        .expect("TODO");
+    file_menu
+        .append(&PredefinedMenuItem::close_window(None))
+        .unwrap();
 
     let edit_menu = Submenu::new("Edit", true);
-    edit_menu.append(&PredefinedMenuItem::undo(None)).expect("TODO");
-    edit_menu.append(&PredefinedMenuItem::redo(None)).expect("TODO");
-    edit_menu.append(&PredefinedMenuItem::separator()).expect("TODO");
-    edit_menu.append(&PredefinedMenuItem::cut(None)).expect("TODO");
-    edit_menu.append(&PredefinedMenuItem::copy(None)).expect("TODO");
-    edit_menu.append(&PredefinedMenuItem::paste(None)).expect("TODO");
-    edit_menu.append(&PredefinedMenuItem::separator()).expect("TODO");
-    edit_menu.append(&PredefinedMenuItem::select_all(None)).expect("TODO");
+    edit_menu
+        .append(&PredefinedMenuItem::undo(None))
+        .expect("TODO");
+    edit_menu
+        .append(&PredefinedMenuItem::redo(None))
+        .expect("TODO");
+    edit_menu
+        .append(&PredefinedMenuItem::separator())
+        .expect("TODO");
+    edit_menu
+        .append(&PredefinedMenuItem::cut(None))
+        .expect("TODO");
+    edit_menu
+        .append(&PredefinedMenuItem::copy(None))
+        .expect("TODO");
+    edit_menu
+        .append(&PredefinedMenuItem::paste(None))
+        .expect("TODO");
+    edit_menu
+        .append(&PredefinedMenuItem::separator())
+        .expect("TODO");
+    edit_menu
+        .append(&PredefinedMenuItem::select_all(None))
+        .expect("TODO");
 
     let mut view_menu = Submenu::new("View", true);
     // // TODO: Hide tab bar items.
 
     let mut window_menu = Submenu::new("Window", true);
-    window_menu.append(&PredefinedMenuItem::minimize(None)).unwrap();
+    window_menu
+        .append(&PredefinedMenuItem::minimize(None))
+        .unwrap();
     // window_menu.append(&PredefinedMenuItem::zoom(None));
     // // window_menu.add_native_item(MenuItem::Separator);
     // // window_menu.add_native_item(MenuItem::BringAllToFront);
@@ -214,9 +258,7 @@ fn main() {
                 let ossa_prop = OssaProp::new(ossa);
                 Box::new(ossa_prop)
             }),
-            Box::new(move || {
-                Box::new(menu_id_map.clone())
-            }),
+            Box::new(move || Box::new(menu_id_map.clone())),
         ],
         vec![Box::new(c)],
     );
@@ -328,4 +370,3 @@ fn app() -> Element {
         gui::layout::layout { view, state, root_scope }
     )
 }
-

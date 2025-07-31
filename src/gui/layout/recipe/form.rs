@@ -48,12 +48,15 @@ pub fn validate_instructions(instructions: &str) -> Result<(), &'static str> {
 }
 
 pub fn recipe_form(initial_recipe: Option<&Recipe>) -> (Element, RecipeForm) {
-    let mut name = use_signal(|| initial_recipe.map_or("".to_string(), |x| x.title.value().clone()));
+    let mut name =
+        use_signal(|| initial_recipe.map_or("".to_string(), |x| x.title.value().clone()));
 
-    let mut ingredients = use_signal(|| initial_recipe.map_or(vec![], |x| x.ingredients.value().clone()));
+    let mut ingredients =
+        use_signal(|| initial_recipe.map_or(vec![], |x| x.ingredients.value().clone()));
     let mut new_ingredient: Signal<String> = use_signal(|| "".into());
 
-    let mut instructions = use_signal(|| initial_recipe.map_or("".to_string(), |x| x.instructions.value().clone()));
+    let mut instructions =
+        use_signal(|| initial_recipe.map_or("".to_string(), |x| x.instructions.value().clone()));
     // TODO: Pull out TextArea to a separate Component.
     let mut is_instructions_modified = use_signal(|| false);
     let instructions_err = if *is_instructions_modified.peek() {

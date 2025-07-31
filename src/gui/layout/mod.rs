@@ -56,10 +56,10 @@ fn is_cookbook_selected(view: &View, cid: CookbookId) -> bool {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
-pub(crate) struct SignalView (Signal<View>);
+pub(crate) struct SignalView(Signal<View>);
 
 impl SignalView {
-    pub(crate) fn use_view(view: View) ->Self  {
+    pub(crate) fn use_view(view: View) -> Self {
         let s = use_signal(|| view);
         SignalView(s)
     }
@@ -82,8 +82,6 @@ impl SignalView {
         self.0.read()
     }
 }
-
-
 
 #[component]
 // pub fn layout(cx: Scope, state: Vec<UseStore<DefaultSetup, Cookbook>>) -> Element {
@@ -141,10 +139,7 @@ pub fn layout(
 }
 
 #[component]
-fn NoSelectionView(
-    view: SignalView,
-    state: Signal<State>,
-) -> Element {
+fn NoSelectionView(view: SignalView, state: Signal<State>) -> Element {
     rsx! (
         Sidebar { view: view, state: state }
         div {
@@ -189,7 +184,6 @@ fn get_recipe(mut view: SignalView, cookbook: &Cookbook, recipe_id: RecipeId) ->
 fn CookbookView(view: SignalView, state: Signal<State>, cookbook_id: CookbookId) -> Element {
     let cookbook_store = get_cookbook_store(view, state, cookbook_id).expect("TODO"); // ?;
     if let Some(cookbook) = cookbook_store.get_current_state() {
-
         let pills = cookbook.recipes.iter().map(|(recipe_id, recipe)| {
             rsx!(
                 RecipePill {
@@ -371,7 +365,10 @@ fn CookbookRecipeNewView(
                 ingredients: LWW::new(t, form_state.ingredients.peek().clone()),
                 instructions: LWW::new(t, form_state.instructions.peek().clone()),
             };
-            let op = CookbookOp::Recipes(TwoPMapOp::Insert { key: t, value: recipe });
+            let op = CookbookOp::Recipes(TwoPMapOp::Insert {
+                key: t,
+                value: recipe,
+            });
             debug!("op: {:?}", op);
             op
         });
@@ -461,10 +458,16 @@ fn CookbookRecipeEditView(
             pending_ops.queue(|t| helper(RecipeOp::Title(LWW::new(t, new_name.clone()))));
         }
         if *old_recipe.ingredients.value() != *new_ingredients {
-            pending_ops.queue(|t| helper(RecipeOp::Ingredients(LWW::new(t, new_ingredients.clone()))));
+            pending_ops
+                .queue(|t| helper(RecipeOp::Ingredients(LWW::new(t, new_ingredients.clone()))));
         }
         if *old_recipe.instructions.value() != *new_instructions {
-            pending_ops.queue(|t| helper(RecipeOp::Instructions(LWW::new(t, new_instructions.clone()))));
+            pending_ops.queue(|t| {
+                helper(RecipeOp::Instructions(LWW::new(
+                    t,
+                    new_instructions.clone(),
+                )))
+            });
         }
 
         // Save updated fields by applying CRDT operations.
@@ -566,31 +569,28 @@ fn RecipePill(
 }
 
 #[component]
-fn Sidebar(
-    view: SignalView,
-    state: Signal<State>,
-) -> Element {
+fn Sidebar(view: SignalView, state: Signal<State>) -> Element {
     let cookbooks = state.read();
-    let cookbooks = cookbooks
-        .iter()
-        .enumerate()
-        .map(|(i, cookbook_store)| {
-            if let Some(title) = cookbook_store.get_current_state().map(|cookbook| cookbook.title.value().clone()) {
-                rsx!(SidebarItem {
-                    title: title,
-                    icon: Shape::BookOpen,
-                    selected: is_cookbook_selected(&view.read(), i),
-                    onclick: move |_e| { view.set(View::Cookbook(i)) }
-                })
-            } else {
-                rsx!(SidebarItem {
-                    title: "Downloading...",
-                    icon: Shape::BookOpen,
-                    selected: is_cookbook_selected(&view.read(), i),
-                    onclick: move |_e| { view.set(View::Cookbook(i)) }
-                })
-            }
-        });
+    let cookbooks = cookbooks.iter().enumerate().map(|(i, cookbook_store)| {
+        if let Some(title) = cookbook_store
+            .get_current_state()
+            .map(|cookbook| cookbook.title.value().clone())
+        {
+            rsx!(SidebarItem {
+                title: title,
+                icon: Shape::BookOpen,
+                selected: is_cookbook_selected(&view.read(), i),
+                onclick: move |_e| { view.set(View::Cookbook(i)) }
+            })
+        } else {
+            rsx!(SidebarItem {
+                title: "Downloading...",
+                icon: Shape::BookOpen,
+                selected: is_cookbook_selected(&view.read(), i),
+                onclick: move |_e| { view.set(View::Cookbook(i)) }
+            })
+        }
+    });
 
     rsx! (
         div {
@@ -669,11 +669,7 @@ pub fn SidebarItem<'a>(props: SidebarItemProps) -> Element {
 
 // TODO: Make this a pop up view?
 #[component]
-fn CookbookNewView(
-    view: SignalView,
-    state: Signal<State>,
-    root_scope: ScopeId,
-) -> Element {
+fn CookbookNewView(view: SignalView, state: Signal<State>, root_scope: ScopeId) -> Element {
     let (form, form_state) = new_cookbook_form();
     let save_handler = move |mut _e| {
         // Validate all fields.
@@ -682,12 +678,16 @@ fn CookbookNewView(
         }
 
         let cookbook = Cookbook {
-            title: LWW::new(OperationId::new(None, 0), form_state.name.peek().to_string()),
+            title: LWW::new(
+                OperationId::new(None, 0),
+                form_state.name.peek().to_string(),
+            ),
             recipes: TwoPMap::new(),
         };
         let cookbook_store = new_store_in_scope(root_scope, |ossa| {
             (*ossa).create_store(cookbook, MemoryStorage::new())
-        }).unwrap();
+        })
+        .unwrap();
 
         let cookbook_id = state.len();
         state.push(cookbook_store);
@@ -728,11 +728,7 @@ fn CookbookNewView(
 }
 
 #[component]
-fn ConnectsView(
-    view: SignalView,
-    state: Signal<State>,
-    root_scope: ScopeId,
-) -> Element {
+fn ConnectsView(view: SignalView, state: Signal<State>, root_scope: ScopeId) -> Element {
     rsx! (
         Sidebar { view: view, state: state }
         div {
@@ -751,17 +747,16 @@ fn ConnectsView(
 }
 
 #[component]
-fn ConnectToPeerView(
-    view: SignalView,
-    state: Signal<State>,
-) -> Element {
+fn ConnectToPeerView(view: SignalView, state: Signal<State>) -> Element {
     use crate::gui::form::TextField;
 
     let mut address = use_signal(|| "127.0.0.1:8080".to_string());
 
     let ossa_prop = use_context::<OssaProp<DefaultSetup>>();
     let connect_handler = move |_| {
-        ossa_prop.ossa().connect_to_peer_ipv4("127.0.0.1:8080".parse().unwrap());
+        ossa_prop
+            .ossa()
+            .connect_to_peer_ipv4("127.0.0.1:8080".parse().unwrap());
     };
 
     pub fn validate_ipv4_address(address: &str) -> Result<(), &'static str> {
@@ -796,11 +791,7 @@ fn ConnectToPeerView(
 }
 
 #[component]
-fn ConnectToStoreView(
-    view: SignalView,
-    state: Signal<State>,
-    root_scope: ScopeId,
-) -> Element {
+fn ConnectToStoreView(view: SignalView, state: Signal<State>, root_scope: ScopeId) -> Element {
     use crate::gui::form::TextField;
 
     pub fn validate_store_id(store_id: &str) -> Result<(), &'static str> {
@@ -815,7 +806,8 @@ fn ConnectToStoreView(
         debug!("Connecting to store: {:?}", store_id);
         let recipe_store = new_store_in_scope(root_scope, |ossa| {
             ossa.connect_to_store::<Cookbook>(store_id)
-        }).expect("Failed to connect_to_store");
+        })
+        .expect("Failed to connect_to_store");
         let cookbook_id = state.len();
         state.push(recipe_store);
         view.set(View::Cookbook(cookbook_id));

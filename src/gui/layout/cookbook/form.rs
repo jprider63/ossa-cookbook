@@ -23,9 +23,7 @@ pub fn validate_name(name: &str) -> Result<(), &'static str> {
 pub fn new_cookbook_form() -> (Element, NewCookbookForm) {
     let mut name = use_signal(|| "".to_string());
 
-    let form_state = NewCookbookForm {
-        name,
-    };
+    let form_state = NewCookbookForm { name };
 
     let view = rsx! (
             div {
