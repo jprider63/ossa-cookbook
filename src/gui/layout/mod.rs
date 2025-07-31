@@ -9,18 +9,19 @@ use dioxus_heroicons::{solid::Shape, Icon};
 use dioxus_markdown::Markdown;
 // TODO: Fix outline icons.
 
-use odyssey_core::storage::memory::MemoryStorage;
-use odyssey_core::store::ecg::v0::OperationId;
-use odyssey_core::time::CausalTime;
-use odyssey_crdt::map::twopmap::{TwoPMap, TwoPMapOp};
-use odyssey_crdt::register::LWW;
+use ossa_core::storage::memory::MemoryStorage;
+use ossa_core::store::ecg::v0::OperationId;
+use ossa_core::time::CausalTime;
+use ossa_crdt::map::twopmap::{TwoPMap, TwoPMapOp};
+use ossa_crdt::register::LWW;
+use ossa_dioxus::{new_store_in_scope, DefaultSetup, OssaProp, UseStore};
 use tracing::{debug, error, warn};
 
 use crate::gui::layout::cookbook::form::{new_cookbook_form, valid_new_cookbook_form};
 use crate::gui::layout::recipe::form::{recipe_form, valid_recipe_form};
 use crate::state::{Cookbook, CookbookId, CookbookOp, Recipe, RecipeId, RecipeOp, State, Time};
 
-use crate::{new_store_in_scope, use_store, CookbookApplication, MenuMap, MenuOperation, OdysseyProp, UseStore};
+use crate::{use_store, MenuMap, MenuOperation};
 
 const RECIPE_ICON: Asset = asset!("/img/recipe_icon.svg");
 
@@ -55,10 +56,10 @@ fn is_cookbook_selected(view: &View, cid: CookbookId) -> bool {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
-pub(crate) struct SignalView (Signal<View>);
+pub(crate) struct SignalView(Signal<View>);
 
 impl SignalView {
-    pub(crate) fn use_view(view: View) ->Self  {
+    pub(crate) fn use_view(view: View) -> Self {
         let s = use_signal(|| view);
         SignalView(s)
     }
@@ -82,13 +83,11 @@ impl SignalView {
     }
 }
 
-
-
 #[component]
-// pub fn layout(cx: Scope, state: Vec<UseStore<CookbookApplication, Cookbook>>) -> Element {
+// pub fn layout(cx: Scope, state: Vec<UseStore<DefaultSetup, Cookbook>>) -> Element {
 pub fn layout(
     view: SignalView,
-    state: Signal<Vec<UseStore<CookbookApplication, Cookbook>>>,
+    state: Signal<Vec<UseStore<DefaultSetup, Cookbook>>>,
     root_scope: ScopeId,
 ) -> Element {
     let v = view.read();
@@ -140,10 +139,7 @@ pub fn layout(
 }
 
 #[component]
-fn NoSelectionView(
-    view: SignalView,
-    state: Signal<State>,
-) -> Element {
+fn NoSelectionView(view: SignalView, state: Signal<State>) -> Element {
     rsx! (
         Sidebar { view: view, state: state }
         div {
@@ -160,7 +156,7 @@ fn get_cookbook_store(
     mut view: SignalView,
     state: Signal<State>,
     cookbook_id: CookbookId,
-) -> Option<UseStore<CookbookApplication, Cookbook>> {
+) -> Option<UseStore<DefaultSetup, Cookbook>> {
     let cookbook = state.with(|state| state.get(cookbook_id).cloned()); // TODO: Can we avoid this clone? Return a ref?
     if cookbook.is_none() {
         // Cookbook not found, so set no selection.
@@ -188,7 +184,6 @@ fn get_recipe(mut view: SignalView, cookbook: &Cookbook, recipe_id: RecipeId) ->
 fn CookbookView(view: SignalView, state: Signal<State>, cookbook_id: CookbookId) -> Element {
     let cookbook_store = get_cookbook_store(view, state, cookbook_id).expect("TODO"); // ?;
     if let Some(cookbook) = cookbook_store.get_current_state() {
-
         let pills = cookbook.recipes.iter().map(|(recipe_id, recipe)| {
             rsx!(
                 RecipePill {
@@ -370,7 +365,10 @@ fn CookbookRecipeNewView(
                 ingredients: LWW::new(t, form_state.ingredients.peek().clone()),
                 instructions: LWW::new(t, form_state.instructions.peek().clone()),
             };
-            let op = CookbookOp::Recipes(TwoPMapOp::Insert { key: t, value: recipe });
+            let op = CookbookOp::Recipes(TwoPMapOp::Insert {
+                key: t,
+                value: recipe,
+            });
             debug!("op: {:?}", op);
             op
         });
@@ -429,9 +427,9 @@ fn CookbookRecipeEditView(
 ) -> Element {
     let mut cookbook_store = get_cookbook_store(view, state, cookbook_id).expect("TODO"); // ?;
     let cookbook_store_state = cookbook_store.get_current_store_state().expect("TODO"); // ?;
-    let old_cookbook = cookbook_store_state.state;
+    let old_cookbook = cookbook_store_state.state();
 
-    let old_recipe = get_recipe(view, &old_cookbook, recipe_id).expect("TODO"); // ?;
+    let old_recipe = get_recipe(view, old_cookbook, recipe_id).expect("TODO"); // ?;
 
     let old_recipe = old_recipe.clone();
     let (form, form_state) = recipe_form(Some(&old_recipe));
@@ -460,10 +458,16 @@ fn CookbookRecipeEditView(
             pending_ops.queue(|t| helper(RecipeOp::Title(LWW::new(t, new_name.clone()))));
         }
         if *old_recipe.ingredients.value() != *new_ingredients {
-            pending_ops.queue(|t| helper(RecipeOp::Ingredients(LWW::new(t, new_ingredients.clone()))));
+            pending_ops
+                .queue(|t| helper(RecipeOp::Ingredients(LWW::new(t, new_ingredients.clone()))));
         }
         if *old_recipe.instructions.value() != *new_instructions {
-            pending_ops.queue(|t| helper(RecipeOp::Instructions(LWW::new(t, new_instructions.clone()))));
+            pending_ops.queue(|t| {
+                helper(RecipeOp::Instructions(LWW::new(
+                    t,
+                    new_instructions.clone(),
+                )))
+            });
         }
 
         // Save updated fields by applying CRDT operations.
@@ -565,31 +569,28 @@ fn RecipePill(
 }
 
 #[component]
-fn Sidebar(
-    view: SignalView,
-    state: Signal<State>,
-) -> Element {
+fn Sidebar(view: SignalView, state: Signal<State>) -> Element {
     let cookbooks = state.read();
-    let cookbooks = cookbooks
-        .iter()
-        .enumerate()
-        .map(|(i, cookbook_store)| {
-            if let Some(title) = cookbook_store.get_current_state().map(|cookbook| cookbook.title.value().clone()) {
-                rsx!(SidebarItem {
-                    title: title,
-                    icon: Shape::BookOpen,
-                    selected: is_cookbook_selected(&view.read(), i),
-                    onclick: move |_e| { view.set(View::Cookbook(i)) }
-                })
-            } else {
-                rsx!(SidebarItem {
-                    title: "Downloading...",
-                    icon: Shape::BookOpen,
-                    selected: is_cookbook_selected(&view.read(), i),
-                    onclick: move |_e| { view.set(View::Cookbook(i)) }
-                })
-            }
-        });
+    let cookbooks = cookbooks.iter().enumerate().map(|(i, cookbook_store)| {
+        if let Some(title) = cookbook_store
+            .get_current_state()
+            .map(|cookbook| cookbook.title.value().clone())
+        {
+            rsx!(SidebarItem {
+                title: title,
+                icon: Shape::BookOpen,
+                selected: is_cookbook_selected(&view.read(), i),
+                onclick: move |_e| { view.set(View::Cookbook(i)) }
+            })
+        } else {
+            rsx!(SidebarItem {
+                title: "Downloading...",
+                icon: Shape::BookOpen,
+                selected: is_cookbook_selected(&view.read(), i),
+                onclick: move |_e| { view.set(View::Cookbook(i)) }
+            })
+        }
+    });
 
     rsx! (
         div {
@@ -668,11 +669,7 @@ pub fn SidebarItem<'a>(props: SidebarItemProps) -> Element {
 
 // TODO: Make this a pop up view?
 #[component]
-fn CookbookNewView(
-    view: SignalView,
-    state: Signal<State>,
-    root_scope: ScopeId,
-) -> Element {
+fn CookbookNewView(view: SignalView, state: Signal<State>, root_scope: ScopeId) -> Element {
     let (form, form_state) = new_cookbook_form();
     let save_handler = move |mut _e| {
         // Validate all fields.
@@ -681,12 +678,16 @@ fn CookbookNewView(
         }
 
         let cookbook = Cookbook {
-            title: LWW::new(OperationId::new(None, 0), form_state.name.peek().to_string()),
+            title: LWW::new(
+                OperationId::new(None, 0),
+                form_state.name.peek().to_string(),
+            ),
             recipes: TwoPMap::new(),
         };
-        let cookbook_store = new_store_in_scope(root_scope, |odyssey| {
-            (*odyssey).create_store(cookbook, MemoryStorage::new())
-        }).unwrap();
+        let cookbook_store = new_store_in_scope(root_scope, |ossa| {
+            (*ossa).create_store(cookbook, MemoryStorage::new())
+        })
+        .unwrap();
 
         let cookbook_id = state.len();
         state.push(cookbook_store);
@@ -727,11 +728,7 @@ fn CookbookNewView(
 }
 
 #[component]
-fn ConnectsView(
-    view: SignalView,
-    state: Signal<State>,
-    root_scope: ScopeId,
-) -> Element {
+fn ConnectsView(view: SignalView, state: Signal<State>, root_scope: ScopeId) -> Element {
     rsx! (
         Sidebar { view: view, state: state }
         div {
@@ -750,17 +747,16 @@ fn ConnectsView(
 }
 
 #[component]
-fn ConnectToPeerView(
-    view: SignalView,
-    state: Signal<State>,
-) -> Element {
+fn ConnectToPeerView(view: SignalView, state: Signal<State>) -> Element {
     use crate::gui::form::TextField;
 
     let mut address = use_signal(|| "127.0.0.1:8080".to_string());
 
-    let odyssey = use_context::<OdysseyProp<CookbookApplication>>().odyssey;
+    let ossa_prop = use_context::<OssaProp<DefaultSetup>>();
     let connect_handler = move |_| {
-        odyssey.connect_to_peer_ipv4("127.0.0.1:8080".parse().unwrap());
+        ossa_prop
+            .ossa()
+            .connect_to_peer_ipv4("127.0.0.1:8080".parse().unwrap());
     };
 
     pub fn validate_ipv4_address(address: &str) -> Result<(), &'static str> {
@@ -795,11 +791,7 @@ fn ConnectToPeerView(
 }
 
 #[component]
-fn ConnectToStoreView(
-    view: SignalView,
-    state: Signal<State>,
-    root_scope: ScopeId,
-) -> Element {
+fn ConnectToStoreView(view: SignalView, state: Signal<State>, root_scope: ScopeId) -> Element {
     use crate::gui::form::TextField;
 
     pub fn validate_store_id(store_id: &str) -> Result<(), &'static str> {
@@ -808,14 +800,14 @@ fn ConnectToStoreView(
 
     let mut store_id = use_signal(|| "".to_string());
 
-    // let odyssey = use_context::<OdysseyProp<CookbookApplication>>().odyssey;
+    // let ossa = use_context::<OssaProp<DefaultSetup>>().ossa;
     let connect_handler = move |_| {
         let store_id = store_id.peek().parse().expect("TODO");
         debug!("Connecting to store: {:?}", store_id);
-        let recipe_store = new_store_in_scope(root_scope, |odyssey| {
-        // let recipe_store = use_store(|odyssey| {
-            odyssey.connect_to_store::<Cookbook>(store_id) // , MemoryStorage::new());
-        }).expect("Failed to connect_to_store");
+        let recipe_store = new_store_in_scope(root_scope, |ossa| {
+            ossa.connect_to_store::<Cookbook>(store_id)
+        })
+        .expect("Failed to connect_to_store");
         let cookbook_id = state.len();
         state.push(recipe_store);
         view.set(View::Cookbook(cookbook_id));
