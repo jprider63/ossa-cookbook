@@ -4,9 +4,9 @@ use ossa_core::util::Sha256Hash;
 use ossa_crdt::map::twopmap::TwoPMapOp;
 use ossa_crdt::{map::twopmap::TwoPMap, register::LWW, time::CausalState, CRDT};
 use ossa_dioxus::{DefaultSetup, UseStore};
+use ossa_typeable::Typeable;
 
 use serde::{Deserialize, Serialize};
-use typeable::Typeable;
 
 pub type Time = OperationId<HeaderId<Sha256Hash>>;
 

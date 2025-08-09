@@ -1,11 +1,12 @@
-use clap::{Parser, Subcommand};
-use ossa_core::util::TypedStream;
+use clap::{Parser};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 pub(crate) struct Arguments {
-    #[arg(short, long, value_name = "PORT")]
-    pub(crate) port: Option<u16>,
+    #[arg(short, long, value_name = "PORT", default_value_t=8080, help = "Port to run the Ossa server on. If the port is already in use, the next available one will be used.")]
+    pub(crate) port: u16,
+    #[arg(long, value_name = "UPNP", help = "Attempt NAT traversal using UPnP IGD.")]
+    pub(crate) upnp: bool,
 }
 
 // // TMP for testing

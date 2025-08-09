@@ -123,11 +123,12 @@ fn main() {
     // use typeable::Typeable;
     // println!("typeid: {}", Header::<Sha256Hash, ()>::type_ident());
 
-    let port = args.port.unwrap_or(8080);
+    let port = args.port;
     let ossa_config = OssaConfig {
         // address: SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), port),
         // TODO: IPV4 and/or IPV6
         port,
+        upnp: args.upnp,
     };
     // // TODO: switch to this API XXX
     // let ossa: Ossa<Sha256Hash> = Ossa::new(ossa_config);

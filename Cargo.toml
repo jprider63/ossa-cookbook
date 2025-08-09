@@ -1,5 +1,5 @@
 [package]
-name = "odyssey-cookbook"
+name = "ossa-cookbook"
 version = "0.1.0"
 edition = "2021"
 
@@ -15,10 +15,14 @@ futures = "*"
 keyboard-types = "*"
 im = "15.1.0"
 manganis = "*"
-ossa-core = {git = "https://github.com/jprider63/odyssey.git", rev="11c8ae271b3b7763e18e9813416abca9f010ab70"}
-ossa-crdt = {git = "https://github.com/jprider63/odyssey.git", rev="11c8ae271b3b7763e18e9813416abca9f010ab70"}
-ossa-dioxus = {git = "https://github.com/jprider63/odyssey.git", rev="11c8ae271b3b7763e18e9813416abca9f010ab70"}
-typeable = {git = "https://github.com/jprider63/odyssey.git", rev="11c8ae271b3b7763e18e9813416abca9f010ab70", features=["im"]}
+ossa-core = {git = "https://github.com/jprider63/ossa.git", rev="890213ca9120a9586f84def96b1fb61465ddfd57"}
+ossa-crdt = {git = "https://github.com/jprider63/ossa.git", rev="890213ca9120a9586f84def96b1fb61465ddfd57"}
+ossa-dioxus = {git = "https://github.com/jprider63/ossa.git", rev="890213ca9120a9586f84def96b1fb61465ddfd57"}
+ossa-typeable = {git = "https://github.com/jprider63/ossa.git", rev="890213ca9120a9586f84def96b1fb61465ddfd57", features=["im"]}
+# ossa-core = {path="../ossa/ossa-core"}
+# ossa-crdt = {path="../ossa/ossa-crdt"} 
+# ossa-dioxus = {path="../ossa/ossa-dioxus"} 
+# ossa-typeable = {path="../ossa/ossa-typeable", features=["im"]}
 serde = "*"
 tauri = "2.2.4"
 tracing = "*"
