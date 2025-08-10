@@ -15,10 +15,10 @@ futures = "*"
 keyboard-types = "*"
 im = "15.1.0"
 manganis = "*"
-ossa-core = {git = "https://github.com/jprider63/ossa.git", rev="890213ca9120a9586f84def96b1fb61465ddfd57"}
-ossa-crdt = {git = "https://github.com/jprider63/ossa.git", rev="890213ca9120a9586f84def96b1fb61465ddfd57"}
-ossa-dioxus = {git = "https://github.com/jprider63/ossa.git", rev="890213ca9120a9586f84def96b1fb61465ddfd57"}
-ossa-typeable = {git = "https://github.com/jprider63/ossa.git", rev="890213ca9120a9586f84def96b1fb61465ddfd57", features=["im"]}
+ossa-core = {git = "https://github.com/jprider63/ossa.git", rev="5130cd3f4709b94a7c68e16a7036635d7d8b5f02"}
+ossa-crdt = {git = "https://github.com/jprider63/ossa.git", rev="5130cd3f4709b94a7c68e16a7036635d7d8b5f02"}
+ossa-dioxus = {git = "https://github.com/jprider63/ossa.git", rev="5130cd3f4709b94a7c68e16a7036635d7d8b5f02"}
+ossa-typeable = {git = "https://github.com/jprider63/ossa.git", rev="5130cd3f4709b94a7c68e16a7036635d7d8b5f02", features=["im"]}
 # ossa-core = {path="../ossa/ossa-core"}
 # ossa-crdt = {path="../ossa/ossa-crdt"} 
 # ossa-dioxus = {path="../ossa/ossa-dioxus"} 

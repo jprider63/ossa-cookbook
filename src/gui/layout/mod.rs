@@ -756,7 +756,7 @@ fn ConnectToPeerView(view: SignalView, state: Signal<State>) -> Element {
     let connect_handler = move |_| {
         ossa_prop
             .ossa()
-            .connect_to_peer_ipv4("127.0.0.1:8080".parse().unwrap());
+            .connect_to_peer_ipv4((address.peek()).parse().unwrap());
     };
 
     pub fn validate_ipv4_address(address: &str) -> Result<(), &'static str> {

@@ -5,8 +5,8 @@ use clap::{Parser};
 pub(crate) struct Arguments {
     #[arg(short, long, value_name = "PORT", default_value_t=8080, help = "Port to run the Ossa server on. If the port is already in use, the next available one will be used.")]
     pub(crate) port: u16,
-    #[arg(long, value_name = "UPNP", help = "Attempt NAT traversal using UPnP IGD.")]
-    pub(crate) upnp: bool,
+    #[arg(long, help = "Attempt NAT traversal using UPnP IGD.")]
+    pub(crate) nat_traversal: bool,
 }
 
 // // TMP for testing
